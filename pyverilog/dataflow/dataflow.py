@@ -75,8 +75,9 @@ class DFNode(object):
 class DFTerminal(DFNode):
     attr_names = ('name',)
 
-    def __init__(self, name):
+    def __init__(self, name, nodeid=None):
         self.name = name
+        self.nodeid = nodeid
 
     def __repr__(self):
         ret = ''
@@ -88,7 +89,7 @@ class DFTerminal(DFNode):
         ret = '(Terminal '
         for n in self.name:
             ret += str(n) + '.'
-        return ret[0:-1] + ')'
+        return ret[0:-1] + '[{}])'.format(self.nodeid)
 
     def tocode(self, dest='dest'):
         # ret = ''
@@ -116,14 +117,15 @@ class DFTerminal(DFNode):
 class DFConstant(DFNode):
     attr_names = ('value',)
 
-    def __init__(self, value):
+    def __init__(self, value, nodeid=None):
         self.value = value
+        self.nodeid = nodeid
 
     def __repr__(self):
         return str(self.value)
 
     def tostr(self):
-        ret = '(Constant ' + str(self.value) + ')'
+        ret = '(Constant ' + str(self.value) + '[{}])'.format(self.nodeid)
         return ret
 
     def children(self):
@@ -143,11 +145,12 @@ class DFConstant(DFNode):
 
 
 class DFIntConst(DFConstant):
-    def __init__(self, value):
+    def __init__(self, value, nodeid=None):
         self.value = value
+        self.nodeid = nodeid
 
     def tostr(self):
-        ret = '(IntConst ' + str(self.value) + ')'
+        ret = '(IntConst ' + str(self.value) + '[{}])'.format(self.nodeid)
         return ret
 
     def eval(self):
@@ -188,11 +191,12 @@ class DFIntConst(DFConstant):
 
 
 class DFFloatConst(DFConstant):
-    def __init__(self, value):
+    def __init__(self, value, nodeid=None):
         self.value = value
+        self.nodeid = nodeid
 
     def tostr(self):
-        ret = '(FloatConst ' + str(self.value) + ')'
+        ret = '(FloatConst ' + str(self.value) + '[{}])'.format(self.nodeid)
         return ret
 
     def eval(self):
@@ -200,11 +204,12 @@ class DFFloatConst(DFConstant):
 
 
 class DFStringConst(DFConstant):
-    def __init__(self, value):
+    def __init__(self, value, nodeid=None):
         self.value = value
+        self.nodeid = nodeid
 
     def tostr(self):
-        ret = '(StringConst ' + str(self.value) + ')'
+        ret = '(StringConst ' + str(self.value) + '[{}])'.format(self.nodeid)
         return ret
 
     def eval(self):
@@ -218,9 +223,10 @@ class DFNotTerminal(DFNode):
 class DFOperator(DFNotTerminal):
     attr_names = ('operator',)
 
-    def __init__(self, nextnodes, operator):
+    def __init__(self, nextnodes, operator, nodeid=None):
         self.nextnodes = nextnodes
         self.operator = operator
+        self.nodeid = nodeid
 
         for n in nextnodes:
             if n is None:
@@ -234,7 +240,7 @@ class DFOperator(DFNotTerminal):
         ret += ' Next:'
         for n in self.nextnodes:
             ret += n.tostr() + ','
-        ret = ret[0:-1] + ')'
+        ret = ret[0:-1] + '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
@@ -266,10 +272,11 @@ class DFOperator(DFNotTerminal):
 class DFPartselect(DFNotTerminal):
     attr_names = ()
 
-    def __init__(self, var, msb, lsb):
+    def __init__(self, var, msb, lsb, nodeid=None):
         self.var = var
         self.msb = msb
         self.lsb = lsb
+        self.nodeid = nodeid
 
     def __repr__(self):
         return 'PartSelect'
@@ -279,7 +286,7 @@ class DFPartselect(DFNotTerminal):
         ret += ' Var:' + self.var.tostr()
         ret += ' MSB:' + self.msb.tostr()
         ret += ' LSB:' + self.lsb.tostr()
-        ret += ')'
+        ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
@@ -315,9 +322,10 @@ class DFPartselect(DFNotTerminal):
 class DFPointer(DFNotTerminal):
     attr_names = ()
 
-    def __init__(self, var, ptr):
+    def __init__(self, var, ptr, nodeid=None):
         self.var = var
         self.ptr = ptr
+        self.nodeid = nodeid
 
     def __repr__(self):
         return 'Pointer'
@@ -326,7 +334,7 @@ class DFPointer(DFNotTerminal):
         ret = '(Pointer'
         ret += ' Var:' + self.var.tostr()
         ret += ' PTR:' + self.ptr.tostr()
-        ret += ')'
+        ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
@@ -354,8 +362,9 @@ class DFPointer(DFNotTerminal):
 class DFConcat(DFNotTerminal):
     attr_names = ()
 
-    def __init__(self, nextnodes):
+    def __init__(self, nextnodes, nodeid=None):
         self.nextnodes = nextnodes
+        self.nodeid = nodeid
 
     def __repr__(self):
         return 'Concat'
@@ -365,7 +374,7 @@ class DFConcat(DFNotTerminal):
         ret += ' Next:'
         for n in self.nextnodes:
             ret += n.tostr() + ','
-        ret = ret[0:-1] + ')'
+        ret = ret[0:-1] + '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
@@ -394,10 +403,11 @@ class DFConcat(DFNotTerminal):
 class DFBranch(DFNotTerminal):
     attr_names = ()
 
-    def __init__(self, condnode, truenode, falsenode):
+    def __init__(self, condnode, truenode, falsenode, nodeid=None):
         self.condnode = condnode
         self.truenode = truenode
         self.falsenode = falsenode
+        self.nodeid = nodeid
 
     def __repr__(self):
         return 'Branch'
@@ -410,7 +420,7 @@ class DFBranch(DFNotTerminal):
             ret += ' True:' + self.truenode.tostr()
         if self.falsenode is not None:
             ret += ' False:' + self.falsenode.tostr()
-        ret += ')'
+        ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest', always=''):
@@ -482,11 +492,12 @@ class DFBranch(DFNotTerminal):
 class DFEvalValue(DFNode):
     attr_names = ('value', 'width',)
 
-    def __init__(self, value, width=32, isfloat=False, isstring=False):
+    def __init__(self, value, nodeid=None, width=32, isfloat=False, isstring=False):
         self.value = value
         self.width = width
         self.isfloat = isfloat
         self.isstring = isstring
+        self.nodeid = nodeid
 
     def __repr__(self):
         if self.isstring:
@@ -499,7 +510,7 @@ class DFEvalValue(DFNode):
         ret += "'d"
         ret += str(abs(self.value))
         if self.value < 0:
-            ret += ')'
+            ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tostr(self):
@@ -541,8 +552,9 @@ class DFEvalValue(DFNode):
 class DFUndefined(DFNode):
     attr_names = ('width',)
 
-    def __init__(self, width):
+    def __init__(self, width, nodeid=None):
         self.width = width
+        self.nodeid = nodeid
 
     def __repr__(self):
         ret = ''
@@ -576,8 +588,9 @@ class DFUndefined(DFNode):
 class DFHighImpedance(DFNode):
     attr_names = ('width',)
 
-    def __init__(self, width):
+    def __init__(self, width, nodeid=None):
         self.width = width
+        self.nodeid = nodeid
 
     def __repr__(self):
         ret = ''
@@ -611,8 +624,9 @@ class DFHighImpedance(DFNode):
 class DFDelay(DFNotTerminal):
     attr_names = ()
 
-    def __init__(self, nextnode):
+    def __init__(self, nextnode, nodeid=None):
         self.nextnode = nextnode
+        self.nodeid = nodeid
 
     def __repr__(self):
         return 'Delay'
@@ -621,7 +635,7 @@ class DFDelay(DFNotTerminal):
         ret = '(Delay '
         if self.nextnode is not None:
             ret += self.nextnode.tostr()
-        ret += ')'
+        ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
@@ -645,9 +659,10 @@ class DFDelay(DFNotTerminal):
 class DFSyscall(DFNotTerminal):
     attr_names = ()
 
-    def __init__(self, syscall, nextnodes):
+    def __init__(self, syscall, nextnodes, nodeid=None):
         self.syscall = syscall
         self.nextnodes = nextnodes
+        self.nodeid = nodeid
 
     def __repr__(self):
         return 'Syscall'
@@ -658,7 +673,7 @@ class DFSyscall(DFNotTerminal):
         ret += ' Next:'
         for n in self.nextnodes:
             ret += n.tostr() + ','
-        ret = ret[0:-1] + ')'
+        ret = ret[0:-1] + '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):

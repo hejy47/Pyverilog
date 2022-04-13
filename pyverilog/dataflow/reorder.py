@@ -35,7 +35,7 @@ def reorder(tree):
         condnode = reorder(tree.condnode)
         if isinstance(condnode, DFBranch):
             return insertBranch(condnode, truenode, falsenode)
-        return DFBranch(condnode, truenode, falsenode)
+        return DFBranch(condnode, truenode, falsenode, nodeid=condnode.nodeid)
 
     if isinstance(tree, DFOperator):
         resolvednodes = []
@@ -44,7 +44,7 @@ def reorder(tree):
         for r in resolvednodes:
             if isinstance(r, DFBranch):
                 return insertOpList(resolvednodes, tree.operator)
-        return DFOperator(tuple(resolvednodes), tree.operator)
+        return DFOperator(tuple(resolvednodes), tree.operator, nodeid=tree.nodeid)
 
     if isinstance(tree, DFConcat):
         resolvednodes = []
@@ -71,14 +71,14 @@ def reorder(tree):
         if isinstance(resolved_ptr, DFBranch):
             # raise FormatError('PTR should not be DFBranch')n
             return DFBranch(resolved_ptr.condnode,
-                            reorder(DFPointer(resolved_var, resolved_ptr.truenode)),
-                            reorder(DFPointer(resolved_var, resolved_ptr.falsenode)))
+                            reorder(DFPointer(resolved_var, resolved_ptr.truenode, nodeid=resolved_ptr.truenode.nodeid)),
+                            reorder(DFPointer(resolved_var, resolved_ptr.falsenode, nodeid=resolved_ptr.falsenode.nodeid)), nodeid=resolved_ptr.condnode.nodeid)
         if isinstance(resolved_var, DFBranch):
             return insertPointer(resolved_var, resolved_ptr)
-        return DFPointer(resolved_var, resolved_ptr)
+        return DFPointer(resolved_var, resolved_ptr, nodeid=resolved_var.nodeid)
 
     if isinstance(tree, DFDelay):
-        return DFDelay(reorder(tree.nextnode))
+        return DFDelay(reorder(tree.nextnode), nodeid=tree.nextnode.nodeid)
 
     raise DefinitionError('Undefined DFNode type: %s %s' % (str(type(tree)), str(tree)))
 
@@ -87,21 +87,22 @@ def reorder(tree):
 
 def insertBranch(base, truenode, falsenode):
     if isinstance(base, DFBranch):
-        return DFBranch(base.condnode, insertBranch(base.truenode, truenode, falsenode), insertBranch(base.falsenode, truenode, falsenode))
-    return DFBranch(base, truenode, falsenode)
+        return DFBranch(base.condnode, insertBranch(base.truenode, truenode, falsenode), insertBranch(base.falsenode, truenode, falsenode), nodeid=base.condnode.nodeid)
+    return DFBranch(base, truenode, falsenode, nodeid=base.nodeid)
 
 
 def insertUnaryOp(base, op):
     if isinstance(base, DFBranch):
-        return DFBranch(base.condnode, insertUnaryOp(base.truenode, op), insertUnaryOp(base.falsenode, op))
-    return DFOperator((base,), op)
+        return DFBranch(base.condnode, insertUnaryOp(base.truenode, op), insertUnaryOp(base.falsenode, op), nodeid=base.condnode.nodeid)
+    return DFOperator((base,), op, nodeid=base.condnode.nodeid)
 
 
 def insertOp(left, right, op):
     if isinstance(left, DFBranch):
-        return DFBranch(left.condnode, insertOp(left.truenode, right, op), insertOp(left.falsenode, right, op))
+        return DFBranch(left.condnode, insertOp(left.truenode, right, op), insertOp(left.falsenode, right, op), nodeid=left.condnode.nodeid)
     elif isinstance(right, DFBranch):
-        return DFBranch(right.condnode, insertOp(left, right.truenode, op), insertOp(left, right.falsenode, op))
+        return DFBranch(right.condnode, insertOp(left, right.truenode, op), insertOp(left, right.falsenode, op), nodeid=right.condnode.nodeid)
+    import pdb; pdb.set_trace()
     return DFOperator((left, right), op)
 
 
@@ -111,9 +112,9 @@ def insertOpList(nextnodes, op):
     for n in nextnodes:
         restnodes.pop(0)
         if isinstance(n, DFBranch):
-            return DFBranch(n.condnode, insertOpList(tuple(donenodes + [n.truenode, ] + restnodes), op), insertOpList(tuple(donenodes + [n.falsenode, ] + restnodes), op))
+            return DFBranch(n.condnode, insertOpList(tuple(donenodes + [n.truenode, ] + restnodes), op), insertOpList(tuple(donenodes + [n.falsenode, ] + restnodes), op), nodeid=n.condnode.nodeid)
         donenodes.append(n)
-    return DFOperator(nextnodes, op)
+    return DFOperator(nextnodes, op, nodeid=nextnodes.nodeid)
 
 
 def insertConcat(nextnodes):
@@ -122,22 +123,22 @@ def insertConcat(nextnodes):
     for n in nextnodes:
         restnodes.pop(0)
         if isinstance(n, DFBranch):
-            return DFBranch(n.condnode, insertConcat(tuple(donenodes + [n.truenode, ] + restnodes)), insertConcat(tuple(donenodes + [n.falsenode, ] + restnodes)))
+            return DFBranch(n.condnode, insertConcat(tuple(donenodes + [n.truenode, ] + restnodes)), insertConcat(tuple(donenodes + [n.falsenode, ] + restnodes)), nodeid=n.condnode.nodeid)
         donenodes.append(n)
-    return DFConcat(nextnodes)
+    return DFConcat(nextnodes, nodeid=nextnodes.nodeid)
 
 
 def insertPartselect(var, msb, lsb):
     if isinstance(var, DFBranch):
-        return DFBranch(var.condnode, insertPartselect(var.truenode, msb, lsb), insertPartselect(var.falsenode, msb, lsb))
+        return DFBranch(var.condnode, insertPartselect(var.truenode, msb, lsb), insertPartselect(var.falsenode, msb, lsb), nodeid=var.condnode.nodeid)
     if var is None:
         return None
-    return DFPartselect(var, msb, lsb)
+    return DFPartselect(var, msb, lsb, nodeid=var.nodeid)
 
 
 def insertPointer(var, ptr):
     if isinstance(var, DFBranch):
-        return DFBranch(var.condnode, insertPointer(var.truenode, ptr), insertPointer(var.falsenode, ptr))
+        return DFBranch(var.condnode, insertPointer(var.truenode, ptr), insertPointer(var.falsenode, ptr), nodeid=var.condnode.nodeid)
     if var is None:
         return None
-    return DFPointer(var, ptr)
+    return DFPointer(var, ptr, nodeid=var.nodeid)

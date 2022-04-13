@@ -2289,6 +2289,15 @@ class VerilogParser(object):
 class ParseError(Exception):
     pass
 
+class NodeNumbering(object):
+    def __init__(self) -> None:
+        self.current_node_id = -1
+    
+    def visit(self, ast):
+        self.current_node_id += 1
+        ast.nodeid = self.current_node_id
+        for c in ast.children():
+            if c: self.visit(c)
 
 class VerilogCodeParser(object):
 
@@ -2304,6 +2313,7 @@ class VerilogCodeParser(object):
                                                 preprocess_include,
                                                 preprocess_define)
         self.parser = VerilogParser(outputdir=outputdir, debug=debug)
+        self.numbering = NodeNumbering()
 
     def preprocess(self):
         self.preprocessor.preprocess()
@@ -2314,6 +2324,7 @@ class VerilogCodeParser(object):
     def parse(self, preprocess_output='preprocess.output', debug=0):
         text = self.preprocess()
         ast = self.parser.parse(text, debug=debug)
+        self.numbering.visit(ast)
         self.directives = self.parser.get_directives()
         return ast
 

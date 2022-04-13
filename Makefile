@@ -2,11 +2,15 @@ PYTHON=python3
 #PYTHON=python
 
 .PHONY: all
-all: clean
+all: install clean
 
 .PHONY: test
 test:
 	$(PYTHON) -m pytest -vv tests
+
+.PHONY: install
+install:
+	$(PYTHON) setup.py install --prefix=$(HOME)/.local
 
 .PHONY: clean
 clean:

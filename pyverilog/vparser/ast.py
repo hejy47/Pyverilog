@@ -42,7 +42,7 @@ class Node(object):
             buf.write(attrstr)
 
         if showlineno:
-            buf.write(' (at %s)' % self.lineno)
+            buf.write(' (line: %s, node ID: %s)' % (self.lineno, self.nodeid))
 
         buf.write('\n')
 
@@ -82,6 +82,7 @@ class Source(Node):
 
     def __init__(self, name, description, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.description = description
 
@@ -97,6 +98,7 @@ class Description(Node):
 
     def __init__(self, definitions, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.definitions = definitions
 
     def children(self):
@@ -111,6 +113,7 @@ class ModuleDef(Node):
 
     def __init__(self, name, paramlist, portlist, items, default_nettype='wire', lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.paramlist = paramlist
         self.portlist = portlist
@@ -133,6 +136,7 @@ class Paramlist(Node):
 
     def __init__(self, params, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.params = params
 
     def children(self):
@@ -147,6 +151,7 @@ class Portlist(Node):
 
     def __init__(self, ports, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.ports = ports
 
     def children(self):
@@ -161,6 +166,7 @@ class Port(Node):
 
     def __init__(self, name, width, dimensions, type, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.width = width
         self.dimensions = dimensions
@@ -178,6 +184,7 @@ class Width(Node):
 
     def __init__(self, msb, lsb, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.msb = msb
         self.lsb = lsb
 
@@ -199,6 +206,7 @@ class Dimensions(Node):
 
     def __init__(self, lengths, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.lengths = lengths
 
     def children(self):
@@ -213,6 +221,7 @@ class Identifier(Node):
 
     def __init__(self, name, scope=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.scope = scope
 
@@ -233,6 +242,7 @@ class Value(Node):
 
     def __init__(self, value, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.value = value
 
     def children(self):
@@ -247,6 +257,7 @@ class Constant(Value):
 
     def __init__(self, value, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.value = value
 
     def children(self):
@@ -274,6 +285,7 @@ class Variable(Value):
 
     def __init__(self, name, width=None, signed=False, dimensions=None, value=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.width = width
         self.signed = signed
@@ -332,6 +344,7 @@ class Ioport(Node):
 
     def __init__(self, first, second=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.first = first
         self.second = second
 
@@ -349,6 +362,7 @@ class Parameter(Node):
 
     def __init__(self, name, value, width=None, signed=False, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.value = value
         self.width = width
@@ -377,6 +391,7 @@ class Decl(Node):
 
     def __init__(self, list, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.list = list
 
     def children(self):
@@ -391,6 +406,7 @@ class Concat(Node):
 
     def __init__(self, list, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.list = list
 
     def children(self):
@@ -409,6 +425,7 @@ class Repeat(Node):
 
     def __init__(self, value, times, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.value = value
         self.times = times
 
@@ -426,6 +443,7 @@ class Partselect(Node):
 
     def __init__(self, var, msb, lsb, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.var = var
         self.msb = msb
         self.lsb = lsb
@@ -446,6 +464,7 @@ class Pointer(Node):
 
     def __init__(self, var, ptr, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.var = var
         self.ptr = ptr
 
@@ -463,6 +482,7 @@ class Lvalue(Node):
 
     def __init__(self, var, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.var = var
 
     def children(self):
@@ -477,6 +497,7 @@ class Rvalue(Node):
 
     def __init__(self, var, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.var = var
 
     def children(self):
@@ -492,6 +513,7 @@ class Operator(Node):
 
     def __init__(self, left, right, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.left = left
         self.right = right
 
@@ -516,6 +538,7 @@ class UnaryOperator(Operator):
 
     def __init__(self, right, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.right = right
 
     def children(self):
@@ -677,6 +700,7 @@ class Cond(Operator):
 
     def __init__(self, cond, true_value, false_value, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.cond = cond
         self.true_value = true_value
         self.false_value = false_value
@@ -697,6 +721,7 @@ class Assign(Node):
 
     def __init__(self, left, right, ldelay=None, rdelay=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.left = left
         self.right = right
         self.ldelay = ldelay
@@ -720,6 +745,7 @@ class Always(Node):
 
     def __init__(self, sens_list, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.sens_list = sens_list
         self.statement = statement
 
@@ -749,6 +775,7 @@ class SensList(Node):
 
     def __init__(self, list, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.list = list
 
     def children(self):
@@ -763,6 +790,7 @@ class Sens(Node):
 
     def __init__(self, sig, type='posedge', lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.sig = sig
         self.type = type  # 'posedge', 'negedge', 'level', 'all' (*)
 
@@ -778,6 +806,7 @@ class Substitution(Node):
 
     def __init__(self, left, right, ldelay=None, rdelay=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.left = left
         self.right = right
         self.ldelay = ldelay
@@ -809,6 +838,7 @@ class IfStatement(Node):
 
     def __init__(self, cond, true_statement, false_statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.cond = cond
         self.true_statement = true_statement
         self.false_statement = false_statement
@@ -829,6 +859,7 @@ class ForStatement(Node):
 
     def __init__(self, pre, cond, post, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.pre = pre
         self.cond = cond
         self.post = post
@@ -852,6 +883,7 @@ class WhileStatement(Node):
 
     def __init__(self, cond, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.cond = cond
         self.statement = statement
 
@@ -869,6 +901,7 @@ class CaseStatement(Node):
 
     def __init__(self, comp, caselist, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.comp = comp
         self.caselist = caselist
 
@@ -898,6 +931,7 @@ class Case(Node):
 
     def __init__(self, cond, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.cond = cond
         self.statement = statement
 
@@ -915,6 +949,7 @@ class Block(Node):
 
     def __init__(self, statements, scope=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.statements = statements
         self.scope = scope
 
@@ -930,6 +965,7 @@ class Initial(Node):
 
     def __init__(self, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.statement = statement
 
     def children(self):
@@ -944,6 +980,7 @@ class EventStatement(Node):
 
     def __init__(self, senslist, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.senslist = senslist
 
     def children(self):
@@ -958,6 +995,7 @@ class WaitStatement(Node):
 
     def __init__(self, cond, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.cond = cond
         self.statement = statement
 
@@ -975,6 +1013,7 @@ class ForeverStatement(Node):
 
     def __init__(self, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.statement = statement
 
     def children(self):
@@ -989,6 +1028,7 @@ class DelayStatement(Node):
 
     def __init__(self, delay, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.delay = delay
 
     def children(self):
@@ -1003,6 +1043,7 @@ class InstanceList(Node):
 
     def __init__(self, module, parameterlist, instances, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.module = module
         self.parameterlist = parameterlist
         self.instances = instances
@@ -1021,6 +1062,7 @@ class Instance(Node):
 
     def __init__(self, module, name, portlist, parameterlist, array=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.module = module
         self.name = name
         self.portlist = portlist
@@ -1043,6 +1085,7 @@ class ParamArg(Node):
 
     def __init__(self, paramname, argname, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.paramname = paramname
         self.argname = argname
 
@@ -1058,6 +1101,7 @@ class PortArg(Node):
 
     def __init__(self, portname, argname, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.portname = portname
         self.argname = argname
 
@@ -1073,6 +1117,7 @@ class Function(Node):
 
     def __init__(self, name, retwidth, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.retwidth = retwidth
         self.statement = statement
@@ -1094,6 +1139,7 @@ class FunctionCall(Node):
 
     def __init__(self, name, args, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.args = args
 
@@ -1114,6 +1160,7 @@ class Task(Node):
 
     def __init__(self, name, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.statement = statement
 
@@ -1129,6 +1176,7 @@ class TaskCall(Node):
 
     def __init__(self, name, args, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.args = args
 
@@ -1146,6 +1194,7 @@ class GenerateStatement(Node):
 
     def __init__(self, items, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.items = items
 
     def children(self):
@@ -1160,6 +1209,7 @@ class SystemCall(Node):
 
     def __init__(self, syscall, args, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.syscall = syscall
         self.args = args
 
@@ -1186,6 +1236,7 @@ class IdentifierScopeLabel(Node):
 
     def __init__(self, name, loop=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.loop = loop
 
@@ -1199,6 +1250,7 @@ class IdentifierScope(Node):
 
     def __init__(self, labellist, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.labellist = labellist
 
     def children(self):
@@ -1213,6 +1265,7 @@ class Pragma(Node):
 
     def __init__(self, entry, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.entry = entry
 
     def children(self):
@@ -1227,6 +1280,7 @@ class PragmaEntry(Node):
 
     def __init__(self, name, value=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.name = name
         self.value = value
 
@@ -1242,6 +1296,7 @@ class Disable(Node):
 
     def __init__(self, dest, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.dest = dest
 
     def children(self):
@@ -1254,6 +1309,7 @@ class ParallelBlock(Node):
 
     def __init__(self, statements, scope=None, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.statements = statements
         self.scope = scope
 
@@ -1269,6 +1325,7 @@ class SingleStatement(Node):
 
     def __init__(self, statement, lineno=0):
         self.lineno = lineno
+        self.nodeid = None
         self.statement = statement
 
     def children(self):
@@ -1283,6 +1340,8 @@ class EmbeddedCode(Node):
 
     def __init__(self, code, lineno=0):
         self.code = code
+        self.lineno = lineno
+        self.nodeid = None
 
     def children(self):
         nodelist = []

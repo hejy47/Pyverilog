@@ -114,7 +114,7 @@ class BindVisitor(NodeVisitor):
         self.addTerm(node)
         current = self.frames.getCurrent()
         name = self.frames.getCurrent() + ScopeLabel(node.name, 'signal')
-        value = DFEvalValue(0)
+        value = DFEvalValue(0, None)
         self.setConstant(name, value)
 
     def visit_Function(self, node):
@@ -842,8 +842,8 @@ class BindVisitor(NodeVisitor):
     def makeConstantTerm(self, name, node, scope):
         termtype = node.__class__.__name__
         termtypes = set([termtype])
-        msb = DFIntConst('31') if node.width is None else self.makeDFTree(node.width.msb, scope)
-        lsb = DFIntConst('0') if node.width is None else self.makeDFTree(node.width.lsb, scope)
+        msb = DFIntConst('31', nodeid=None) if node.width is None else self.makeDFTree(node.width.msb, scope)
+        lsb = DFIntConst('0', nodeid=None) if node.width is None else self.makeDFTree(node.width.lsb, scope)
         return Term(name, termtypes, msb, lsb)
 
     def addTerm(self, node, rscope=None):
@@ -861,10 +861,10 @@ class BindVisitor(NodeVisitor):
         termtypes = set([termtype])
 
         if isinstance(node, (Parameter, Localparam)):
-            msb = DFIntConst('31') if node.width is None else self.makeDFTree(node.width.msb, scope)
+            msb = DFIntConst('31', nodeid=None) if node.width is None else self.makeDFTree(node.width.msb, scope)
         else:
-            msb = DFIntConst('0') if node.width is None else self.makeDFTree(node.width.msb, scope)
-        lsb = DFIntConst('0') if node.width is None else self.makeDFTree(node.width.lsb, scope)
+            msb = DFIntConst('0', nodeid=None) if node.width is None else self.makeDFTree(node.width.msb, scope)
+        lsb = DFIntConst('0', nodeid=None) if node.width is None else self.makeDFTree(node.width.lsb, scope)
 
         dims = None
         if node.dimensions is not None:
@@ -1001,27 +1001,27 @@ class BindVisitor(NodeVisitor):
     def makeDFTree(self, node, scope):
         if isinstance(node, str):
             name = self.searchTerminal(node, scope)
-            return DFTerminal(name)
+            return DFTerminal(name, nodeid=node.nodeid)
 
         if isinstance(node, Identifier):
             if node.scope is not None:
                 name = self.searchScopeTerminal(node.scope, node.name, scope)
                 if name is None:
                     raise verror.DefinitionError('No such signal: %s' % node.name)
-                return DFTerminal(name)
+                return DFTerminal(name, nodeid=node.nodeid)
             name = self.searchTerminal(node.name, scope)
             if name is None:
                 raise verror.DefinitionError('No such signal: %s' % node.name)
-            return DFTerminal(name)
+            return DFTerminal(name, nodeid=node.nodeid)
 
         if isinstance(node, IntConst):
-            return DFIntConst(node.value)
+            return DFIntConst(node.value, nodeid=node.nodeid)
 
         if isinstance(node, FloatConst):
-            return DFFloatConst(node.value)
+            return DFFloatConst(node.value, nodeid=node.nodeid)
 
         if isinstance(node, StringConst):
-            return DFStringConst(node.value)
+            return DFStringConst(node.value, nodeid=node.nodeid)
 
         if isinstance(node, Cond):
             true_df = self.makeDFTree(node.true_value, scope)
@@ -1029,20 +1029,20 @@ class BindVisitor(NodeVisitor):
             cond_df = self.makeDFTree(node.cond, scope)
             if isinstance(cond_df, DFBranch):
                 return reorder.insertCond(cond_df, true_df, false_df)
-            return DFBranch(cond_df, true_df, false_df)
+            return DFBranch(cond_df, true_df, false_df, nodeid=node.nodeid)
 
         if isinstance(node, UnaryOperator):
             right_df = self.makeDFTree(node.right, scope)
             if isinstance(right_df, DFBranch):
                 return reorder.insertUnaryOp(right_df, node.__class__.__name__)
-            return DFOperator((right_df,), node.__class__.__name__)
+            return DFOperator((right_df,), node.__class__.__name__, nodeid=node.nodeid)
 
         if isinstance(node, Operator):
             left_df = self.makeDFTree(node.left, scope)
             right_df = self.makeDFTree(node.right, scope)
             if isinstance(left_df, DFBranch) or isinstance(right_df, DFBranch):
                 return reorder.insertOp(left_df, right_df, node.__class__.__name__)
-            return DFOperator((left_df, right_df,), node.__class__.__name__)
+            return DFOperator((left_df, right_df,), node.__class__.__name__, nodeid=node.nodeid)
 
         if isinstance(node, Partselect):
             var_df = self.makeDFTree(node.var, scope)
@@ -1051,7 +1051,7 @@ class BindVisitor(NodeVisitor):
 
             if isinstance(var_df, DFBranch):
                 return reorder.insertPartselect(var_df, msb_df, lsb_df)
-            return DFPartselect(var_df, msb_df, lsb_df)
+            return DFPartselect(var_df, msb_df, lsb_df, nodeid=node.nodeid)
 
         if isinstance(node, Pointer):
             var_df = self.makeDFTree(node.var, scope)
@@ -1059,7 +1059,7 @@ class BindVisitor(NodeVisitor):
 
             if isinstance(var_df, DFTerminal) and self.getTermDims(var_df.name) is not None:
                 return DFPointer(var_df, ptr_df)
-            return DFPartselect(var_df, ptr_df, copy.deepcopy(ptr_df))
+            return DFPartselect(var_df, ptr_df, copy.deepcopy(ptr_df), nodeid=node.nodeid)
 
         if isinstance(node, Concat):
             nextnodes = []
@@ -1068,7 +1068,7 @@ class BindVisitor(NodeVisitor):
             for n in nextnodes:
                 if isinstance(n, DFBranch):
                     return reorder.insertConcat(tuple(nextnodes))
-            return DFConcat(tuple(nextnodes))
+            return DFConcat(tuple(nextnodes), nodeid=node.nodeid)
 
         if isinstance(node, Repeat):
             nextnodes = []
@@ -1076,7 +1076,7 @@ class BindVisitor(NodeVisitor):
             value = self.makeDFTree(node.value, scope)
             for i in range(int(times)):
                 nextnodes.append(copy.deepcopy(value))
-            return DFConcat(tuple(nextnodes))
+            return DFConcat(tuple(nextnodes), nodeid=node.nodeid)
 
         if isinstance(node, FunctionCall):
             func = self.searchFunction(node.name.name, scope)
@@ -1152,14 +1152,14 @@ class BindVisitor(NodeVisitor):
 
             self.visit(taskargs)
             self.frames.setCurrent(current)
-            return DFTerminal(varname)
+            return DFTerminal(varname, nodeid=node.nodeid)
 
         if isinstance(node, SystemCall):
             if node.syscall == 'unsigned':
                 return self.makeDFTree(node.args[0], scope)
             if node.syscall == 'signed':
                 return self.makeDFTree(node.args[0], scope)
-            return DFIntConst('0')
+            return DFIntConst('0', nodeid=None)
 
         raise verror.FormatError("unsupported AST node type: %s %s" %
                                  (str(type(node)), str(node)))
@@ -1215,7 +1215,7 @@ class BindVisitor(NodeVisitor):
             condnode = self.resolveBlockingAssign(tree.condnode, scope)
             if isinstance(condnode, DFBranch):
                 return reorder.insertBranch(condnode, truenode, falsenode)
-            return DFBranch(condnode, truenode, falsenode)
+            return DFBranch(condnode, truenode, falsenode, nodeid=tree.nodeid)
 
         if isinstance(tree, DFOperator):
             resolvednodes = []
@@ -1224,7 +1224,7 @@ class BindVisitor(NodeVisitor):
             for r in resolvednodes:
                 if isinstance(r, DFBranch):
                     return reorder.insertOpList(resolvednodes, tree.operator)
-            return DFOperator(tuple(resolvednodes), tree.operator)
+            return DFOperator(tuple(resolvednodes), tree.operator, nodeid=tree.nodeid)
 
         if isinstance(tree, DFConcat):
             resolvednodes = []
@@ -1233,7 +1233,7 @@ class BindVisitor(NodeVisitor):
             for r in resolvednodes:
                 if isinstance(r, DFBranch):
                     return reorder.insertConcat(resolvednodes)
-            return DFConcat(tuple(resolvednodes))
+            return DFConcat(tuple(resolvednodes), nodeid=tree.nodeid)
 
         if isinstance(tree, DFPartselect):
             resolved_msb = self.resolveBlockingAssign(tree.msb, scope)
@@ -1242,7 +1242,7 @@ class BindVisitor(NodeVisitor):
             if isinstance(resolved_var, DFBranch):
                 return reorder.insertPartselect(resolved_var,
                                                 resolved_msb, resolved_lsb)
-            return DFPartselect(resolved_var, resolved_msb, resolved_lsb)
+            return DFPartselect(resolved_var, resolved_msb, resolved_lsb, nodeid=tree.nodeid)
 
         if isinstance(tree, DFPointer):
             resolved_ptr = self.resolveBlockingAssign(tree.ptr, scope)
@@ -1250,9 +1250,10 @@ class BindVisitor(NodeVisitor):
                     self.getTermDims(tree.var.name) is not None):
                 current_bindlist = self.frames.getBlockingAssign(tree.var.name, scope)
                 if len(current_bindlist) == 0:
-                    return DFPointer(tree.var, resolved_ptr)
-                new_tree = DFPointer(tree.var, resolved_ptr)
+                    return DFPointer(tree.var, resolved_ptr, nodeid=tree.nodeid)
+                new_tree = DFPointer(tree.var, resolved_ptr, nodeid=tree.nodeid)
                 for bind in current_bindlist:
+                    import pdb; pdb.set_trace()
                     new_tree = DFBranch(DFOperator((bind.ptr, resolved_ptr), 'Eq'),
                                         bind.tree, new_tree)
                 print(("Warning: "
@@ -1261,7 +1262,7 @@ class BindVisitor(NodeVisitor):
             resolved_var = self.resolveBlockingAssign(tree.var, scope)
             if isinstance(resolved_var, DFBranch):
                 return reorder.insertPointer(resolved_var, resolved_ptr)
-            return DFPointer(resolved_var, resolved_ptr)
+            return DFPointer(resolved_var, resolved_ptr, nodeid=tree.nodeid)
 
         raise verror.FormatError("unsupported DFNode type: %s %s" %
                                  (str(type(tree)), str(tree)))
@@ -1299,12 +1300,13 @@ class BindVisitor(NodeVisitor):
             concatlist.append(bind.tree)
             last_msb = -1 if bind.msb is None else bind.msb.value
             last_ptr = -1 if not isinstance(bind.ptr, DFEvalValue) else bind.ptr.value
+        import pdb; pdb.set_trace()
         return DFConcat(tuple(reversed(concatlist)))
 
     def getDestinations(self, left, scope):
         ret = []
         dst = self.getDsts(left, scope)
-        part_offset = DFIntConst('0')
+        part_offset = DFIntConst('0', nodeid=None)
         for name, msb, lsb, ptr in reversed(dst):
             if len(dst) == 1:
                 ret.append((name, msb, lsb, ptr, None, None))
@@ -1312,6 +1314,7 @@ class BindVisitor(NodeVisitor):
 
             if msb is None and lsb is None:
                 msb, lsb = self.getTermWidth(name)
+            import pdb; pdb.set_trace()
             diff = reorder.reorder(DFOperator((msb, lsb), 'Minus'))
             part_lsb = part_offset
             part_msb = reorder.reorder(DFOperator((part_offset, diff), 'Plus'))
@@ -1419,7 +1422,7 @@ class BindVisitor(NodeVisitor):
                              part_msb, part_lsb, alwaysinfo):
         tree = raw_tree
         if len(dst) > 1:
-            tree = reorder.reorder(DFPartselect(raw_tree, part_msb, part_lsb))
+            tree = reorder.reorder(DFPartselect(raw_tree, part_msb, part_lsb, nodeid=raw_tree.nodeid))
         bind = Bind(tree, name, msb, lsb, ptr, alwaysinfo)
         self.frames.addNonblockingAssign(name, bind)
 
@@ -1445,7 +1448,7 @@ class BindVisitor(NodeVisitor):
             tree = raw_tree
             if len(renamed_dst) > 1:
                 tree = reorder.reorder(
-                    DFPartselect(tree, part_msb, part_lsb))
+                    DFPartselect(tree, part_msb, part_lsb, nodeid=tree.nodeid))
             bind = Bind(tree, name, msb, lsb, ptr)
             self.dataflow.addBind(name, bind)
 
@@ -1511,7 +1514,7 @@ class BindVisitor(NodeVisitor):
 
         if num_dst > 1:
             tree = reorder.reorder(
-                DFPartselect(tree, part_msb, part_lsb))
+                DFPartselect(tree, part_msb, part_lsb, nodeid=tree.nodeid))
 
         return Bind(tree, name, msb, lsb, ptr, alwaysinfo, bindtype)
 
@@ -1536,29 +1539,29 @@ class BindVisitor(NodeVisitor):
             return node
         if len(condlist) == 1:
             if flowlist[0]:
-                return DFBranch(condlist[0], node, None)
+                return DFBranch(condlist[0], node, None, condlist[0].nodeid)
             else:
-                return DFBranch(condlist[0], None, node)
+                return DFBranch(condlist[0], None, node, condlist[0].nodeid)
         else:
             if flowlist[0]:
                 return DFBranch(
                     condlist[0],
                     self.makeBranchTree(condlist[1:], flowlist[1:], node),
-                    None)
+                    None, condlist[0].nodeid)
             else:
                 return DFBranch(
                     condlist[0],
                     None,
-                    self.makeBranchTree(condlist[1:], flowlist[1:], node))
+                    self.makeBranchTree(condlist[1:], flowlist[1:], node), condlist[0].nodeid)
 
     def appendBranchTree(self, base, pos, tree):
         if len(pos) == 0:
             return tree
         if len(pos) == 1:
             if pos[0]:
-                return DFBranch(base.condnode, tree, base.falsenode)
+                return DFBranch(base.condnode, tree, base.falsenode, base.nodeid)
             else:
-                return DFBranch(base.condnode, base.truenode, tree)
+                return DFBranch(base.condnode, base.truenode, tree, base.nodeid)
         else:
             if pos[0]:
                 return DFBranch(
