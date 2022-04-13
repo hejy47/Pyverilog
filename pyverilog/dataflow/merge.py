@@ -69,8 +69,8 @@ class VerilogDataflowMerge(object):
         termtype = self.getTermtype(termname)
         if signaltype.isWire(termtype):
             return 'assign'
-        if signaltype.isWireArray(termtype):
-            return 'assign'
+        # if signaltype.isWireArray(termtype):
+        #     return 'assign'
         if signaltype.isReg(termtype):
             if bind.isClockEdge():
                 return 'clockedge'
