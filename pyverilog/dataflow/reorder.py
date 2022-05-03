@@ -53,7 +53,7 @@ def reorder(tree):
         for r in resolvednodes:
             if isinstance(r, DFBranch):
                 return insertConcat(resolvednodes)
-        return DFConcat(tuple(resolvednodes))
+        return DFConcat(tuple(resolvednodes), nodeid=tree.nodeid)
 
     if isinstance(tree, DFPartselect):
         resolved_msb = reorder(tree.msb)
@@ -63,7 +63,7 @@ def reorder(tree):
             raise FormatError('MSB and LSB should not be DFBranch')
         if isinstance(resolved_var, DFBranch):
             return insertPartselect(resolved_var, resolved_msb, resolved_lsb)
-        return DFPartselect(resolved_var, resolved_msb, resolved_lsb)
+        return DFPartselect(resolved_var, resolved_msb, resolved_lsb, nodeid=tree.nodeid)
 
     if isinstance(tree, DFPointer):
         resolved_ptr = reorder(tree.ptr)
@@ -103,7 +103,7 @@ def insertOp(left, right, op):
     elif isinstance(right, DFBranch):
         return DFBranch(right.condnode, insertOp(left, right.truenode, op), insertOp(left, right.falsenode, op), nodeid=right.condnode.nodeid)
     import pdb; pdb.set_trace()
-    return DFOperator((left, right), op)
+    return DFOperator((left, right), op, nodeid=op.nodeid)
 
 
 def insertOpList(nextnodes, op):

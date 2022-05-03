@@ -49,5 +49,5 @@ def replaceUndefined(tree, termname):
         nextnodes = []
         for n in tree.nextnodes:
             nextnodes.append(replaceUndefined(n, termname))
-        return DFConcat(tuple(nextnodes))
+        return DFConcat(tuple(nextnodes), nodeid=tree.nodeid)
     raise DefinitionError('Undefined DFNode type: %s %s' % (str(type(tree)), str(tree)))

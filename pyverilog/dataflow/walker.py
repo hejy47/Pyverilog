@@ -115,7 +115,7 @@ class VerilogDataflowWalker(VerilogDataflowMerge):
             nextnodes = []
             for n in tree.nextnodes:
                 nextnodes.append(self.walkTree(n, visited, step, delay))
-            return DFConcat(tuple(nextnodes))
+            return DFConcat(tuple(nextnodes), nodeid=tree.nodeid)
 
         raise verror.DefinitionError(
             'Undefined Node Type: %s : %s' % (str(type(tree)), str(tree)))

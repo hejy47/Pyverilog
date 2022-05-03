@@ -538,7 +538,7 @@ class SignalVisitor(NodeVisitor):
             for n in nextnodes:
                 if isinstance(n, DFBranch):
                     return reorder.insertConcat(tuple(nextnodes))
-            return DFConcat(tuple(nextnodes))
+            return DFConcat(tuple(nextnodes), nodeid=node.nodeid)
 
         if isinstance(node, Repeat):
             nextnodes = []
@@ -546,7 +546,7 @@ class SignalVisitor(NodeVisitor):
             value = self.makeDFTree(node.value, scope)
             for i in range(int(times)):
                 nextnodes.append(copy.deepcopy(value))
-            return DFConcat(tuple(nextnodes))
+            return DFConcat(tuple(nextnodes), nodeid=node.nodeid)
 
         if isinstance(node, SystemCall):
             if node.syscall == 'unsigned':

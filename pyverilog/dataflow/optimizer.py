@@ -129,6 +129,7 @@ class VerilogOptimizer(object):
                 evalcc = self.evalConcat(nextnodes_rslts)
                 if evalcc is not None:
                     return evalcc
+            import pdb; pdb.set_trace()
             return DFConcat(tuple(nextnodes_rslts))
 
         if isinstance(tree, DFPartselect):
@@ -433,7 +434,7 @@ class VerilogOptimizer(object):
                     nextnodes.extend(n.nextnodes)
                     continue
                 nextnodes.append(self.optimizeHierarchy(n))
-            return self.mergeConcat(DFConcat(tuple(nextnodes)))
+            return self.mergeConcat(DFConcat(tuple(nextnodes), nodeid=tree.nodeid))
         if isinstance(tree, DFSyscall):
             return DFSyscall(tree.syscall, tuple([self.optimizeHierarchy(n) for n in tree.nextnodes]))
 
@@ -509,6 +510,7 @@ class VerilogOptimizer(object):
                 ret_usednodes.append(self.optimizeConstant(node))
             usednodes_cnt += 1
         ret_usednodes.reverse()
+        import pdb; pdb.set_trace()
         return DFPartselect(DFConcat(tuple(ret_usednodes)), DFEvalValue(msb - msboffset), DFEvalValue(lsb + lsboffset))
 
     def _isPowerOf2(self, value):
@@ -565,6 +567,7 @@ class VerilogOptimizer(object):
             else:
                 constvallist = []
                 ret_nodes.append(n)
+        import pdb; pdb.set_trace()
         return DFConcat(tuple(ret_nodes))
 
     def mergeConcat_undefined(self, concatnode):
@@ -579,6 +582,7 @@ class VerilogOptimizer(object):
             else:
                 width = 0
                 ret_nodes.append(n)
+        import pdb; pdb.set_trace()
         return DFConcat(tuple(ret_nodes))
 
     def mergeConcat_partselect(self, concatnode):
@@ -609,6 +613,7 @@ class VerilogOptimizer(object):
             last_node = n
         if len(ret_nodes) == 1:
             return ret_nodes[0]
+        import pdb; pdb.set_trace()
         return DFConcat(tuple(ret_nodes))
 
     def mergeConcat_branch(self, concatnode):
@@ -643,7 +648,7 @@ class VerilogOptimizer(object):
                     pos += 1
 
                 new_node = DFBranch(last_node.condnode, DFConcat(
-                    tuple(new_truenode_list)), DFConcat(tuple(new_falsenode_list)))
+                    tuple(new_truenode_list), nodeid=last_node.truenode.nodeid), DFConcat(tuple(new_falsenode_list), nodeid=last_node.falsenode.nodeid))
                 last_node = new_node
                 nodelist.pop()
                 nodelist.append(new_node)
@@ -652,6 +657,7 @@ class VerilogOptimizer(object):
             last_node = n
         if len(nodelist) == 1:
             return nodelist[0]
+        import pdb; pdb.set_trace()
         return DFConcat(tuple(nodelist))
 
     def mergeIdenticalNodes(self, node):

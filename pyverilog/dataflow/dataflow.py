@@ -510,7 +510,7 @@ class DFEvalValue(DFNode):
         ret += "'d"
         ret += str(abs(self.value))
         if self.value < 0:
-            ret += '[{}])'.format(self.nodeid)
+            ret += ')'
         return ret
 
     def tostr(self):
@@ -524,7 +524,7 @@ class DFEvalValue(DFNode):
         ret += "'d"
         ret += str(abs(self.value))
         if self.value < 0:
-            ret += ')'
+            ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
