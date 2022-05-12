@@ -1539,20 +1539,20 @@ class BindVisitor(NodeVisitor):
             return node
         if len(condlist) == 1:
             if flowlist[0]:
-                return DFBranch(condlist[0], node, None, condlist[0].nodeid)
+                return DFBranch(condlist[0], node, None)
             else:
-                return DFBranch(condlist[0], None, node, condlist[0].nodeid)
+                return DFBranch(condlist[0], None, node)
         else:
             if flowlist[0]:
                 return DFBranch(
                     condlist[0],
                     self.makeBranchTree(condlist[1:], flowlist[1:], node),
-                    None, condlist[0].nodeid)
+                    None)
             else:
                 return DFBranch(
                     condlist[0],
                     None,
-                    self.makeBranchTree(condlist[1:], flowlist[1:], node), condlist[0].nodeid)
+                    self.makeBranchTree(condlist[1:], flowlist[1:], node))
 
     def appendBranchTree(self, base, pos, tree):
         if len(pos) == 0:
@@ -1567,9 +1567,9 @@ class BindVisitor(NodeVisitor):
                 return DFBranch(
                     base.condnode,
                     self.appendBranchTree(base.truenode, pos[1:], tree),
-                    base.falsenode)
+                    base.falsenode, base.nodeid)
             else:
                 return DFBranch(
                     base.condnode,
                     base.truenode,
-                    self.appendBranchTree(base.falsenode, pos[1:], tree))
+                    self.appendBranchTree(base.falsenode, pos[1:], tree), base.nodeid)

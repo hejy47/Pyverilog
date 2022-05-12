@@ -84,13 +84,13 @@ class VerilogDataflowWalker(VerilogDataflowMerge):
             condnode = self.walkTree(tree.condnode, visited, step, delay)
             truenode = self.walkTree(tree.truenode, visited, step, delay)
             falsenode = self.walkTree(tree.falsenode, visited, step, delay)
-            return DFBranch(condnode, truenode, falsenode)
+            return DFBranch(condnode, truenode, falsenode, nodeid=tree.nodeid)
 
         if isinstance(tree, DFOperator):
             nextnodes = []
             for n in tree.nextnodes:
                 nextnodes.append(self.walkTree(n, visited, step, delay))
-            return DFOperator(tuple(nextnodes), tree.operator)
+            return DFOperator(tuple(nextnodes), tree.operator, nodeid=tree.nodeid)
 
         if isinstance(tree, DFPartselect):
             msb = self.walkTree(tree.msb, visited, step, delay)
@@ -99,8 +99,8 @@ class VerilogDataflowWalker(VerilogDataflowMerge):
             if isinstance(var, DFPartselect):
                 child_lsb = self.getTerm(str(tree.var)).lsb.eval()
                 return DFPartselect(var.var, DFIntConst(str(msb.eval() + var.lsb.eval() - child_lsb)),
-                                    DFIntConst(str(lsb.eval() + var.lsb.eval() - child_lsb)))
-            return DFPartselect(var, msb, lsb)
+                                    DFIntConst(str(lsb.eval() + var.lsb.eval() - child_lsb)), nodeid=tree.nodeid)
+            return DFPartselect(var, msb, lsb, nodeid=tree.nodeid)
 
         if isinstance(tree, DFPointer):
             ptr = self.walkTree(tree.ptr, visited, step, delay)
@@ -109,7 +109,7 @@ class VerilogDataflowWalker(VerilogDataflowMerge):
                 if (self.getTermDims(tree.var.name) is not None and
                         not (isinstance(var, DFTerminal) and var.name == tree.var.name)):
                     return var
-            return DFPointer(var, ptr)
+            return DFPointer(var, ptr, nodeid=tree.nodeid)
 
         if isinstance(tree, DFConcat):
             nextnodes = []

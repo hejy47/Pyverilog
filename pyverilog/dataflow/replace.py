@@ -16,9 +16,9 @@ from pyverilog.dataflow.dataflow import *
 
 def replaceUndefined(tree, termname):
     if tree is None:
-        return DFTerminal(termname)
+        return DFTerminal(termname, nodeid=tree.nodeid)
     if isinstance(tree, DFUndefined):
-        return DFTerminal(termname)
+        return DFTerminal(termname, nodeid=tree.nodeid)
     # if isinstance(tree, DFHighImpedance): return DFTerminal(termname)
     if isinstance(tree, DFConstant):
         return tree
@@ -30,21 +30,21 @@ def replaceUndefined(tree, termname):
         condnode = replaceUndefined(tree.condnode, termname)
         truenode = replaceUndefined(tree.truenode, termname)
         falsenode = replaceUndefined(tree.falsenode, termname)
-        return DFBranch(condnode, truenode, falsenode)
+        return DFBranch(condnode, truenode, falsenode, nodeid=tree.nodeid)
     if isinstance(tree, DFOperator):
         nextnodes = []
         for n in tree.nextnodes:
             nextnodes.append(replaceUndefined(n, termname))
-        return DFOperator(tuple(nextnodes), tree.operator)
+        return DFOperator(tuple(nextnodes), tree.operator, nodeid=tree.nodeid)
     if isinstance(tree, DFPartselect):
         msb = replaceUndefined(tree.msb, termname)
         lsb = replaceUndefined(tree.lsb, termname)
         var = replaceUndefined(tree.var, termname)
-        return DFPartselect(var, msb, lsb)
+        return DFPartselect(var, msb, lsb, nodeid=tree.nodeid)
     if isinstance(tree, DFPointer):
         ptr = replaceUndefined(tree.ptr, termname)
         var = replaceUndefined(tree.var, termname)
-        return DFPointer(var, ptr)
+        return DFPointer(var, ptr, nodeid=tree.nodeid)
     if isinstance(tree, DFConcat):
         nextnodes = []
         for n in tree.nextnodes:

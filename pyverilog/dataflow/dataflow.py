@@ -420,7 +420,7 @@ class DFBranch(DFNotTerminal):
             ret += ' True:' + self.truenode.tostr()
         if self.falsenode is not None:
             ret += ' False:' + self.falsenode.tostr()
-        ret += '[{}])'.format(self.nodeid)
+        ret += ')'
         return ret
 
     def tocode(self, dest='dest', always=''):

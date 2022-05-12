@@ -501,7 +501,7 @@ class SignalVisitor(NodeVisitor):
             cond_df = self.makeDFTree(node.cond, scope)
             if isinstance(cond_df, DFBranch):
                 return reorder.insertCond(cond_df, true_df, false_df)
-            return DFBranch(cond_df, true_df, false_df)
+            return DFBranch(cond_df, true_df, false_df, nodeid=node.nodeid)
 
         if isinstance(node, UnaryOperator):
             right_df = self.makeDFTree(node.right, scope)

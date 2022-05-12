@@ -72,7 +72,7 @@ class VerilogOptimizer(object):
                 if self.isCondTrue(condnode):
                     return truenode
                 return falsenode
-            return DFBranch(condnode, truenode, falsenode)
+            return DFBranch(condnode, truenode, falsenode, nodeid=tree.nodeid)
 
         if isinstance(tree, DFEvalValue):
             return tree
@@ -86,20 +86,20 @@ class VerilogOptimizer(object):
 
         if isinstance(tree, DFIntConst):
             if 'x' in tree.value or 'z' in tree.value:
-                return DFUndefined(tree.width())
+                return DFUndefined(tree.width(), nodeid=tree.nodeid)
             if 'X' in tree.value or 'Z' in tree.value:
-                return DFUndefined(tree.width())
-            return DFEvalValue(tree.eval(), tree.width())
+                return DFUndefined(tree.width(), nodeid=tree.nodeid)
+            return DFEvalValue(tree.eval(), tree.width(), nodeid=tree.nodeid)
         if isinstance(tree, DFFloatConst):
-            return DFEvalValue(tree.eval(), self.default_width, isfloat=True)
+            return DFEvalValue(tree.eval(), self.default_width, isfloat=True, nodeid=tree.nodeid)
         if isinstance(tree, DFStringConst):
-            return DFEvalValue(tree.eval(), None, isstring=True)
+            return DFEvalValue(tree.eval(), None, isstring=True, nodeid=tree.nodeid)
         if isinstance(tree, DFConstant):
             if 'x' in tree.value or 'z' in tree.value:
                 return DFUndefined()
             if 'X' in tree.value or 'Z' in tree.value:
                 return DFUndefined()
-            return DFEvalValue(tree.eval(), self.default_width)
+            return DFEvalValue(tree.eval(), self.default_width, nodeid=tree.nodeid)
 
         if isinstance(tree, DFOperator):
             nextnodes_rslts, all_const = self.evalNextnodes(tree.nextnodes)
@@ -107,7 +107,7 @@ class VerilogOptimizer(object):
                 evalop = self.evalOperator(tree.operator, nextnodes_rslts)
                 if evalop is not None:
                     return evalop
-            return DFOperator(tuple(nextnodes_rslts), tree.operator)
+            return DFOperator(tuple(nextnodes_rslts), tree.operator, nodeid=tree.nodeid)
 
         if isinstance(tree, DFTerminal):
             if not self.hasConstant(tree.name):
@@ -121,7 +121,7 @@ class VerilogOptimizer(object):
                 lsb_val = self.optimizeConstant(lsb)
                 if isinstance(msb_val, DFEvalValue) and isinstance(lsb_val, DFEvalValue):
                     constwidth = msb_val.value - lsb_val.value + 1
-            return DFEvalValue(const.value, constwidth)
+            return DFEvalValue(const.value, constwidth, nodeid=tree.nodeid)
 
         if isinstance(tree, DFConcat):
             nextnodes_rslts, all_const = self.evalNextnodes(tree.nextnodes)
@@ -129,8 +129,7 @@ class VerilogOptimizer(object):
                 evalcc = self.evalConcat(nextnodes_rslts)
                 if evalcc is not None:
                     return evalcc
-            import pdb; pdb.set_trace()
-            return DFConcat(tuple(nextnodes_rslts))
+            return DFConcat(tuple(nextnodes_rslts), nodeid=tree.nodeid)
 
         if isinstance(tree, DFPartselect):
             var = self.optimizeConstant(tree.var)
@@ -139,7 +138,7 @@ class VerilogOptimizer(object):
             if isinstance(var, DFEvalValue) and isinstance(msb, DFEvalValue) and isinstance(msb, DFEvalValue):
                 evalcc = self.evalPartselect(var, msb, lsb)
                 return evalcc
-            return DFPartselect(var, msb, lsb)
+            return DFPartselect(var, msb, lsb, nodeid=tree.nodeid)
 
         if isinstance(tree, DFPointer):
             if not isinstance(tree.var, DFTerminal):
@@ -148,11 +147,11 @@ class VerilogOptimizer(object):
             var = self.optimizeConstant(tree.var)
             ptr = self.optimizeConstant(tree.ptr)
             if term.dims is not None:
-                return DFPointer(var, ptr)
+                return DFPointer(var, ptr, nodeid=tree.nodeid)
             if isinstance(var, DFEvalValue) and isinstance(ptr, DFEvalValue):
                 evalcc = self.evalPointer(var, ptr)
                 return evalcc
-            return DFPointer(var, ptr)
+            return DFPointer(var, ptr, nodeid=tree.nodeid)
 
         if isinstance(tree, DFSyscall):
             return DFSyscall(tree.syscall, tuple([self.optimizeConstant(n) for n in tree.nextnodes]))
@@ -180,7 +179,7 @@ class VerilogOptimizer(object):
             if n.width > width:
                 width = n.width
         rslt = self._evalOperator(operator, tuple(valuelist), width)
-        return DFEvalValue(rslt, width)
+        return DFEvalValue(rslt, width, nodeid=rslt.nodeid)
 
     def _evalOperator(self, operator, valuelist, width=default_width):
         if operator == 'Uminus':
@@ -401,12 +400,12 @@ class VerilogOptimizer(object):
                 return falsenode
             if truenode == falsenode:
                 return truenode
-            return DFBranch(condnode, truenode, falsenode)
+            return DFBranch(condnode, truenode, falsenode, nodeid=tree.nodeid)
         if isinstance(tree, DFOperator):
             nextnodes = []
             for n in tree.nextnodes:
                 nextnodes.append(self.optimizeHierarchy(n))
-            ret = DFOperator(tuple(nextnodes), tree.operator)
+            ret = DFOperator(tuple(nextnodes), tree.operator, nodeid=tree.nodeid)
             ret = self.replaceOperator(ret)
             ret = self.mergeIdenticalNodes(ret)
             ret = self.mergeStaticNodes(ret)
@@ -420,7 +419,7 @@ class VerilogOptimizer(object):
                 return self.takePart(var.nextnodes, msb, lsb)
             if isinstance(msb, DFEvalValue) and isinstance(lsb, DFEvalValue) and lsb.value == 0 and self.getWidth(var) == (msb.value + 1):
                 return var
-            return DFPartselect(var, msb, lsb)
+            return DFPartselect(var, msb, lsb, nodeid=tree.nodeid)
         if isinstance(tree, DFPointer):
             ptr = self.optimizeHierarchy(tree.ptr)
             var = self.optimizeHierarchy(tree.var)
@@ -436,7 +435,7 @@ class VerilogOptimizer(object):
                 nextnodes.append(self.optimizeHierarchy(n))
             return self.mergeConcat(DFConcat(tuple(nextnodes), nodeid=tree.nodeid))
         if isinstance(tree, DFSyscall):
-            return DFSyscall(tree.syscall, tuple([self.optimizeHierarchy(n) for n in tree.nextnodes]))
+            return DFSyscall(tree.syscall, tuple([self.optimizeHierarchy(n) for n in tree.nextnodes]), nodeid=tree.nodeid)
 
         raise FormatError('Can not merge due to unrecognized type of tree')
 
@@ -648,7 +647,7 @@ class VerilogOptimizer(object):
                     pos += 1
 
                 new_node = DFBranch(last_node.condnode, DFConcat(
-                    tuple(new_truenode_list), nodeid=last_node.truenode.nodeid), DFConcat(tuple(new_falsenode_list), nodeid=last_node.falsenode.nodeid))
+                    tuple(new_truenode_list), nodeid=last_node.truenode.nodeid), DFConcat(tuple(new_falsenode_list), nodeid=last_node.falsenode.nodeid), nodeid=last_node.nodeid)
                 last_node = new_node
                 nodelist.pop()
                 nodelist.append(new_node)

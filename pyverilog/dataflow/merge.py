@@ -361,9 +361,9 @@ class VerilogDataflowMerge(object):
             cond_fst = self.optimizer.optimize(first.condnode)
             cond_snd = self.optimizer.optimize(second.condnode)
             if cond_fst == cond_snd:
-                return DFBranch(cond_fst, self.mergeTree(first.truenode, second.truenode), self.mergeTree(first.falsenode, second.falsenode))
+                return DFBranch(cond_fst, self.mergeTree(first.truenode, second.truenode), self.mergeTree(first.falsenode, second.falsenode), nodeid=first.nodeid)
             appended = copy.deepcopy(first)
-            return DFBranch(cond_snd, self.appendTail(appended, second.truenode), self.appendTail(appended, second.falsenode))
+            return DFBranch(cond_snd, self.appendTail(appended, second.truenode), self.appendTail(appended, second.falsenode), nodeid=second.nodeid)
 
         if first is not None and second is None:
             return first
@@ -378,11 +378,11 @@ class VerilogDataflowMerge(object):
         if isinstance(first, DFBranch) and not isinstance(second, DFBranch):
             cond_fst = self.optimizer.optimize(first.condnode)
             appended = copy.deepcopy(second)
-            return DFBranch(cond_fst, self.appendTail(appended, first.truenode), self.appendTail(appended, first.falsenode))
+            return DFBranch(cond_fst, self.appendTail(appended, first.truenode), self.appendTail(appended, first.falsenode), nodeid=first.nodeid)
         if not isinstance(first, DFBranch) and isinstance(second, DFBranch):
             cond_snd = self.optimizer.optimize(second.condnode)
             appended = copy.deepcopy(first)
-            return DFBranch(cond_snd, self.appendTail(appended, second.truenode), self.appendTail(appended, second.falsenode))
+            return DFBranch(cond_snd, self.appendTail(appended, second.truenode), self.appendTail(appended, second.falsenode), nodeid=second.nodeid)
 
         if not isinstance(first, DFBranch) and not isinstance(second, DFBranch):
             return second
@@ -393,7 +393,7 @@ class VerilogDataflowMerge(object):
         if target is None:
             return copy.deepcopy(appended)
         if isinstance(target, DFBranch):
-            return DFBranch(target.condnode, self.appendTail(appended, target.truenode), self.appendTail(appended, target.falsenode))
+            return DFBranch(target.condnode, self.appendTail(appended, target.truenode), self.appendTail(appended, target.falsenode), nodeid=target.nodeid)
         return target
 
     def splitBindlist(self, bindlist, split_positions):
