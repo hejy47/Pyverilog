@@ -89,17 +89,17 @@ class VerilogOptimizer(object):
                 return DFUndefined(tree.width(), nodeid=tree.nodeid)
             if 'X' in tree.value or 'Z' in tree.value:
                 return DFUndefined(tree.width(), nodeid=tree.nodeid)
-            return DFEvalValue(tree.eval(), tree.width(), nodeid=tree.nodeid)
+            return DFEvalValue(tree.eval(), width=tree.width(), nodeid=tree.nodeid)
         if isinstance(tree, DFFloatConst):
-            return DFEvalValue(tree.eval(), self.default_width, isfloat=True, nodeid=tree.nodeid)
+            return DFEvalValue(tree.eval(), width=self.default_width, isfloat=True, nodeid=tree.nodeid)
         if isinstance(tree, DFStringConst):
-            return DFEvalValue(tree.eval(), None, isstring=True, nodeid=tree.nodeid)
+            return DFEvalValue(tree.eval(), width=None, isstring=True, nodeid=tree.nodeid)
         if isinstance(tree, DFConstant):
             if 'x' in tree.value or 'z' in tree.value:
                 return DFUndefined()
             if 'X' in tree.value or 'Z' in tree.value:
                 return DFUndefined()
-            return DFEvalValue(tree.eval(), self.default_width, nodeid=tree.nodeid)
+            return DFEvalValue(tree.eval(), width=self.default_width, nodeid=tree.nodeid)
 
         if isinstance(tree, DFOperator):
             nextnodes_rslts, all_const = self.evalNextnodes(tree.nextnodes)
@@ -121,7 +121,7 @@ class VerilogOptimizer(object):
                 lsb_val = self.optimizeConstant(lsb)
                 if isinstance(msb_val, DFEvalValue) and isinstance(lsb_val, DFEvalValue):
                     constwidth = msb_val.value - lsb_val.value + 1
-            return DFEvalValue(const.value, constwidth, nodeid=tree.nodeid)
+            return DFEvalValue(const.value, width=constwidth, nodeid=tree.nodeid)
 
         if isinstance(tree, DFConcat):
             nextnodes_rslts, all_const = self.evalNextnodes(tree.nextnodes)
