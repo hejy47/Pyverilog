@@ -30,7 +30,7 @@ class SignalVisitor(NodeVisitor):
         self.optimizer = VerilogOptimizer({}, {})
 
         # set the top frame of top module
-        self.stackInstanceFrame(top, top)
+        self.stackInstanceFrame(top, top, self.moduleinfotable.getDefinition(self.top).nodeid)
 
     def getFrameTable(self):
         return self.frames
@@ -133,7 +133,7 @@ class SignalVisitor(NodeVisitor):
         if nodename == '':
             raise verror.FormatError("Module %s requires an instance name" % node.module)
 
-        current = self.stackInstanceFrame(nodename, node.module)
+        current = self.stackInstanceFrame(nodename, node.module, node.nodeid)
 
         self.setInstanceSimpleConstantTerms()
 
@@ -162,7 +162,7 @@ class SignalVisitor(NodeVisitor):
         label = self.labels.get(self.frames.getLabelKey('always'))
         current = self.frames.addFrame(ScopeLabel(label, 'always'),
                                        generate=self.frames.isGenerate(),
-                                       always=True)
+                                       always=True, framenodeid=node.nodeid)
         self.generic_visit(node)
         self.frames.setCurrent(current)
 
@@ -202,7 +202,7 @@ class SignalVisitor(NodeVisitor):
                                        taskcall=self.frames.isTaskcall(),
                                        generate=self.frames.isGenerate(),
                                        always=self.frames.isAlways(),
-                                       initial=self.frames.isInitial())
+                                       initial=self.frames.isInitial(), framenodeid=node.nodeid)
         self.visit(node.true_statement)
         self.frames.setCurrent(current)
         return label
@@ -218,20 +218,20 @@ class SignalVisitor(NodeVisitor):
                                        taskcall=self.frames.isTaskcall(),
                                        generate=self.frames.isGenerate(),
                                        always=self.frames.isAlways(),
-                                       initial=self.frames.isInitial())
+                                       initial=self.frames.isInitial(), framenodeid=node.nodeid)
         self.visit(node.false_statement)
         self.frames.setCurrent(current)
         return label
 
     def visit_CaseStatement(self, node):
         start_frame = self.frames.getCurrent()
-        self._case(node.comp, node.caselist)
+        self._case(node.comp, node.caselist, node.nodeid)
         self.frames.setCurrent(start_frame)
 
     def visit_CasexStatement(self, node):
         return self.visit_CaseStatement(node)
 
-    def _case(self, comp, caselist):
+    def _case(self, comp, caselist, nodeid):
         if len(caselist) == 0:
             return
         case = caselist[0]
@@ -251,7 +251,7 @@ class SignalVisitor(NodeVisitor):
                                        taskcall=self.frames.isTaskcall(),
                                        generate=self.frames.isGenerate(),
                                        always=self.frames.isAlways(),
-                                       initial=self.frames.isInitial())
+                                       initial=self.frames.isInitial(), framenodeid=nodeid)
         if case.statement is not None:
             self.visit(case.statement)
         self.frames.setCurrent(current)
@@ -265,8 +265,8 @@ class SignalVisitor(NodeVisitor):
                                        taskcall=self.frames.isTaskcall(),
                                        generate=self.frames.isGenerate(),
                                        always=self.frames.isAlways(),
-                                       initial=self.frames.isInitial())
-        self._case(comp, caselist[1:])
+                                       initial=self.frames.isInitial(), framenodeid=nodeid)
+        self._case(comp, caselist[1:], nodeid)
 
     def visit_ForStatement(self, node):
         # pre-statement
@@ -299,7 +299,7 @@ class SignalVisitor(NodeVisitor):
                                            generate=self.frames.isGenerate(),
                                            always=self.frames.isAlways(),
                                            initial=self.frames.isInitial(),
-                                           loop=loop, loop_iter=self.frames.getForIter())
+                                           loop=loop, loop_iter=self.frames.getForIter(), framenodeid=node.nodeid)
             self.visit(node.statement)
             self.frames.setCurrent(current)
 
@@ -319,7 +319,7 @@ class SignalVisitor(NodeVisitor):
     def visit_GenerateStatement(self, node):
         label = self.labels.get(self.frames.getLabelKey('generate'))
         current = self.frames.addFrame(ScopeLabel(label, 'generate'),
-                                       generate=True)
+                                       generate=True, framenodeid=node.nodeid)
         self.generic_visit(node)
         self.frames.setCurrent(current)
 
@@ -335,7 +335,7 @@ class SignalVisitor(NodeVisitor):
                                        taskcall=self.frames.isTaskcall(),
                                        generate=self.frames.isGenerate(),
                                        always=self.frames.isAlways(),
-                                       initial=self.frames.isInitial())
+                                       initial=self.frames.isInitial(), framenodeid=node.nodeid)
         self.generic_visit(node)
         self.frames.setCurrent(current)
 
@@ -357,9 +357,9 @@ class SignalVisitor(NodeVisitor):
     def optimize(self, node):
         return self.optimizer.optimize(node)
 
-    def stackInstanceFrame(self, instname, modulename):
+    def stackInstanceFrame(self, instname, modulename, nodeid):
         current = self.frames.addFrame(ScopeLabel(instname, 'module'), module=True,
-                                       modulename=modulename)
+                                       modulename=modulename, framenodeid=nodeid)
         self.frames.updateSignal(self.moduleinfotable.getSignals(modulename))
         self.frames.updateConst(self.moduleinfotable.getConsts(modulename))
         return current

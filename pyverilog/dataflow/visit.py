@@ -359,7 +359,7 @@ class Frame(object):
                  alwaysinfo=None, condition=None,
                  module=False, functioncall=False, taskcall=False,
                  generate=False, always=False, initial=False, loop=None, loop_iter=None,
-                 modulename=None):
+                 modulename=None, framenodeid=None):
         self.name = name
         self.previous = previous
         self.next = []
@@ -384,6 +384,7 @@ class Frame(object):
         self.nonblockingassign = collections.OrderedDict()
 
         self.modulename = modulename
+        self.framenodeid = framenodeid
 
     def getName(self):
         return self.name
@@ -518,6 +519,9 @@ class Frame(object):
 
     def getNonblockingAssigns(self):
         return self.nonblockingassign
+    
+    def getFrameNodeid(self):
+        return self.framenodeid
 
 
 class FrameTable(object):
@@ -541,7 +545,7 @@ class FrameTable(object):
                  alwaysinfo=None, condition=None,
                  module=False, functioncall=False, taskcall=False,
                  generate=False, always=False, initial=False, loop=None, loop_iter=None,
-                 modulename=None):
+                 modulename=None, framenodeid=None):
 
         scopechain = self.toScopeChain(scopename)
         if scopechain in self.dict:
@@ -555,7 +559,7 @@ class FrameTable(object):
                                       module=module, functioncall=functioncall,
                                       taskcall=taskcall, generate=generate,
                                       always=always, initial=initial, loop=loop, loop_iter=loop_iter,
-                                      modulename=modulename)
+                                      modulename=modulename, framenodeid=framenodeid)
         self.current = scopechain
         return ret
 

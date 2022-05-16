@@ -154,7 +154,7 @@ class DFIntConst(DFConstant):
         return ret
 
     def eval(self):
-        targ = self.value.replace('_', '')
+        targ = str(self.value).replace('_', '')
         signed = False
         match = re.search(r'[Ss](.+)', targ)
         if match is not None:
@@ -420,7 +420,7 @@ class DFBranch(DFNotTerminal):
             ret += ' True:' + self.truenode.tostr()
         if self.falsenode is not None:
             ret += ' False:' + self.falsenode.tostr()
-        ret += ')'
+        ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest', always=''):

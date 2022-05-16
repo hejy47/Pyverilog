@@ -934,15 +934,15 @@ class BindVisitor(NodeVisitor):
                 self.addDataflow(rdst, portname, rscope, lscope)
 
     def addDataflow(self, dst, right, lscope, rscope, alwaysinfo=None, bindtype=None):
-        condlist, flowlist = self.getCondflow(lscope)
+        condlist, flowlist, framenodeidlist = self.getCondflow(lscope)
         raw_tree = self.getTree(right, rscope)
-        self.setDataflow(dst, raw_tree, condlist, flowlist, alwaysinfo, bindtype)
+        self.setDataflow(dst, raw_tree, condlist, flowlist, framenodeidlist, alwaysinfo, bindtype)
 
     def addDataflow_blocking(self, dst, right, lscope, rscope, alwaysinfo):
-        condlist, flowlist = self.getCondflow(lscope)
+        condlist, flowlist, framenodeidlist = self.getCondflow(lscope)
         raw_tree = self.getTree(right, rscope)
 
-        self.setDataflow_rename(dst, raw_tree, condlist, flowlist, lscope, alwaysinfo)
+        self.setDataflow_rename(dst, raw_tree, condlist, flowlist, framenodeidlist, lscope, alwaysinfo)
 
         if len(dst) == 1:  # set genvar value to the constant table
             name = dst[0][0]
@@ -960,7 +960,8 @@ class BindVisitor(NodeVisitor):
         condlist = self.getCondlist(scope)
         condlist = self.resolveCondlist(condlist, scope)
         flowlist = self.getFlowlist(scope)
-        return (condlist, flowlist)
+        framenodeidlist = self.getFrameNodeidlist(scope)
+        return (condlist, flowlist, framenodeidlist)
 
     def getCondlist(self, scope):
         ret = []
@@ -984,6 +985,20 @@ class BindVisitor(NodeVisitor):
             cond = frame.getCondition()
             if cond is not None:
                 ret.append(not frame.isIfelse())
+            if frame.isModule():
+                break
+            s = frame.previous
+        ret.reverse()
+        return tuple(ret)
+    
+    def getFrameNodeidlist(self, scope):
+        ret = []
+        s = scope
+        while s is not None:
+            frame = self.frames.dict[s]
+            cond = frame.getCondition()
+            if cond is not None:
+                ret.append(frame.getFrameNodeid())
             if frame.isModule():
                 break
             s = frame.previous
@@ -1090,7 +1105,7 @@ class BindVisitor(NodeVisitor):
             current = self.frames.addFrame(
                 ScopeLabel(label, 'functioncall'),
                 functioncall=True, generate=self.frames.isGenerate(),
-                always=self.frames.isAlways())
+                always=self.frames.isAlways(), framenodeid=node.nodeid)
 
             varname = self.frames.getCurrent() + ScopeLabel(func.name, 'signal')
 
@@ -1128,7 +1143,7 @@ class BindVisitor(NodeVisitor):
             current = self.frames.addFrame(
                 ScopeLabel(label, 'taskcall'),
                 taskcall=True, generate=self.frames.isGenerate(),
-                always=self.frames.isAlways())
+                always=self.frames.isAlways(), framenodeid=node.nodeid)
 
             varname = self.frames.getCurrent() + ScopeLabel(task.name, 'signal')
 
@@ -1394,12 +1409,12 @@ class BindVisitor(NodeVisitor):
         raise verror.FormatError("unsupported AST node type: %s %s" %
                                  (str(type(left)), str(left)))
 
-    def setDataflow(self, dst, raw_tree, condlist, flowlist,
+    def setDataflow(self, dst, raw_tree, condlist, flowlist, framenodeidlist,
                     alwaysinfo=None, bindtype=None):
 
         for name, msb, lsb, ptr, part_msb, part_lsb in dst:
             bind = self.makeBind(name, msb, lsb, ptr, part_msb, part_lsb,
-                                 raw_tree, condlist, flowlist,
+                                 raw_tree, condlist, flowlist, framenodeidlist,
                                  num_dst=len(dst),
                                  alwaysinfo=alwaysinfo,
                                  bindtype=bindtype)
@@ -1412,11 +1427,11 @@ class BindVisitor(NodeVisitor):
                                           part_msb, part_lsb,
                                           alwaysinfo)
 
-    def setDataflow_rename(self, dst, raw_tree, condlist, flowlist,
+    def setDataflow_rename(self, dst, raw_tree, condlist, flowlist, framenodeidlist,
                            scope, alwaysinfo=None):
         renamed_dst = self.getRenamedDst(dst)
         self.setRenamedTree(renamed_dst, raw_tree, alwaysinfo)
-        self.setRenamedFlow(dst, renamed_dst, condlist, flowlist, scope, alwaysinfo)
+        self.setRenamedFlow(dst, renamed_dst, condlist, flowlist, framenodeidlist, scope, alwaysinfo)
 
     def setNonblockingAssign(self, name, dst, raw_tree, msb, lsb, ptr,
                              part_msb, part_lsb, alwaysinfo):
@@ -1458,20 +1473,20 @@ class BindVisitor(NodeVisitor):
             msb, lsb = self.getTermWidth(name)
             self.setConstantTerm(name, Term(name, set(['Rename']), msb, lsb))
 
-    def setRenamedFlow(self, dst, renamed_dst, condlist, flowlist,
+    def setRenamedFlow(self, dst, renamed_dst, condlist, flowlist, framenodeidlist,
                        scope, alwaysinfo=None):
         term_i = 0
         for name, msb, lsb, ptr, part_msb, part_lsb in dst:
             renamed_term = DFTerminal(renamed_dst[term_i][0])
             renamed_bind = self.makeBind(name, msb, lsb, ptr, part_msb, part_lsb,
-                                         renamed_term, condlist, flowlist,
+                                         renamed_term, condlist, flowlist, framenodeidlist,
                                          num_dst=len(dst), alwaysinfo=alwaysinfo)
             self.dataflow.addBind(name, renamed_bind)
             self.frames.setBlockingAssign(name, renamed_bind, scope)
             term_i += 1
 
     def makeBind(self, name, msb, lsb, ptr, part_msb, part_lsb,
-                 raw_tree, condlist, flowlist,
+                 raw_tree, condlist, flowlist, framenodeidlist,
                  num_dst=1, alwaysinfo=None, bindtype=None):
 
         current_bindlist = self.getBindlist(name)
@@ -1494,6 +1509,7 @@ class BindVisitor(NodeVisitor):
         rest_tree = current_tree
         rest_condlist = condlist
         rest_flowlist = flowlist
+        rest_framenodeidlist =framenodeidlist
 
         match_flowlist = ()
         if (current_msb == msb and
@@ -1502,9 +1518,10 @@ class BindVisitor(NodeVisitor):
             (rest_tree,
              rest_condlist,
              rest_flowlist,
-             match_flowlist) = self.diffBranchTree(current_tree, condlist, flowlist)
+             rest_framenodeidlist,
+             match_flowlist) = self.diffBranchTree(current_tree, condlist, flowlist, framenodeidlist)
 
-        add_tree = self.makeBranchTree(rest_condlist, rest_flowlist, raw_tree)
+        add_tree = self.makeBranchTree(rest_condlist, rest_flowlist, rest_framenodeidlist, raw_tree)
         if rest_flowlist and rest_tree is not None:
             _rest_flowlist = rest_flowlist[:-1] + (not rest_flowlist[-1], )
             add_tree = self.appendBranchTree(add_tree, _rest_flowlist, rest_tree)
@@ -1518,41 +1535,41 @@ class BindVisitor(NodeVisitor):
 
         return Bind(tree, name, msb, lsb, ptr, alwaysinfo, bindtype)
 
-    def diffBranchTree(self, tree, condlist, flowlist, matchflowlist=()):
+    def diffBranchTree(self, tree, condlist, flowlist, framenodeidlist, matchflowlist=()):
         if len(condlist) == 0:
-            return (tree, condlist, flowlist, matchflowlist)
+            return (tree, condlist, flowlist, framenodeidlist, matchflowlist)
         if not isinstance(tree, DFBranch):
-            return (tree, condlist, flowlist, matchflowlist)
+            return (tree, condlist, flowlist, framenodeidlist, matchflowlist)
         if condlist[0] != tree.condnode:
-            return (tree, condlist, flowlist, matchflowlist)
+            return (tree, condlist, flowlist, framenodeidlist, matchflowlist)
         if flowlist[0]:
             return self.diffBranchTree(
-                tree.truenode, condlist[1:], flowlist[1:],
+                tree.truenode, condlist[1:], flowlist[1:], framenodeidlist[1:], 
                 matchflowlist + (flowlist[0],))
         else:
             return self.diffBranchTree(
-                tree.falsenode, condlist[1:], flowlist[1:],
+                tree.falsenode, condlist[1:], flowlist[1:], framenodeidlist[1:], 
                 matchflowlist + (flowlist[0],))
 
-    def makeBranchTree(self, condlist, flowlist, node):
+    def makeBranchTree(self, condlist, flowlist, framenodeidlist, node):
         if len(condlist) == 0 or len(flowlist) == 0:
             return node
         if len(condlist) == 1:
             if flowlist[0]:
-                return DFBranch(condlist[0], node, None)
+                return DFBranch(condlist[0], node, None, nodeid=framenodeidlist[0])
             else:
-                return DFBranch(condlist[0], None, node)
+                return DFBranch(condlist[0], None, node, nodeid=framenodeidlist[0])
         else:
             if flowlist[0]:
                 return DFBranch(
                     condlist[0],
                     self.makeBranchTree(condlist[1:], flowlist[1:], node),
-                    None)
+                    None, nodeid=framenodeidlist[1:])
             else:
                 return DFBranch(
                     condlist[0],
                     None,
-                    self.makeBranchTree(condlist[1:], flowlist[1:], node))
+                    self.makeBranchTree(condlist[1:], flowlist[1:], node), nodeid=framenodeidlist[1:])
 
     def appendBranchTree(self, base, pos, tree):
         if len(pos) == 0:
