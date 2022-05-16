@@ -243,6 +243,7 @@ class SignalVisitor(NodeVisitor):
                     cond = Lor(cond, Eq(comp, c))
             else:
                 cond = Eq(comp, case.cond[0])
+        cond.nodeid = case.nodeid
         label = self.labels.get(self.frames.getLabelKey('if'))
         current = self.frames.addFrame(ScopeLabel(label, 'if'),
                                        frametype='ifthen',

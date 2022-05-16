@@ -217,7 +217,7 @@ class BindVisitor(NodeVisitor):
 
     def visit_Always(self, node):
         label = self.labels.get(self.frames.getLabelKey('always'))
-        current = self.stackNextFrame(label, 'always',
+        current = self.stackNextFrame(label, 'always', node.nodeid,
                                       generate=self.frames.isGenerate(),
                                       always=True)
 
@@ -324,7 +324,7 @@ class BindVisitor(NodeVisitor):
         if node.true_statement is None:
             return None
         label = self.labels.get(self.frames.getLabelKey('if'))
-        current = self.stackNextFrame(label, 'if',
+        current = self.stackNextFrame(label, 'if', node.nodeid,
                                       frametype='ifthen',
                                       condition=node.cond,
                                       functioncall=self.frames.isFunctioncall(),
@@ -344,7 +344,7 @@ class BindVisitor(NodeVisitor):
         if node.false_statement is None:
             return
         label = self._toELSE(label)
-        current = self.stackNextFrame(label, 'if',
+        current = self.stackNextFrame(label, 'if', node.nodeid,
                                       frametype='ifelse',
                                       condition=node.cond,
                                       functioncall=self.frames.isFunctioncall(),
@@ -388,9 +388,10 @@ class BindVisitor(NodeVisitor):
                     cond = Lor(cond, Eq(comp, c))
             else:
                 cond = Eq(comp, case.cond[0])
+        cond.nodeid = case.nodeid
         # else: raise Exception
         label = self.labels.get(self.frames.getLabelKey('if'))
-        current = self.stackNextFrame(label, 'if',
+        current = self.stackNextFrame(label, 'if', case.nodeid,
                                       frametype='ifthen',
                                       condition=cond,
                                       functioncall=self.frames.isFunctioncall(),
@@ -411,7 +412,7 @@ class BindVisitor(NodeVisitor):
             return
 
         label = self._toELSE(label)
-        current = self.stackNextFrame(label, 'if',
+        current = self.stackNextFrame(label, 'if', case.nodeid,
                                       frametype='ifelse',
                                       condition=cond,
                                       functioncall=self.frames.isFunctioncall(),
@@ -456,7 +457,7 @@ class BindVisitor(NodeVisitor):
                 break
 
             # main-statement
-            current = self.stackNextFrame(label, 'for',
+            current = self.stackNextFrame(label, 'for', node.nodeid,
                                           frametype='for',
                                           functioncall=self.frames.isFunctioncall(),
                                           taskcall=self.frames.isTaskcall(),
@@ -500,7 +501,7 @@ class BindVisitor(NodeVisitor):
                 break
 
             # main-statement
-            current = self.stackNextFrame(label, 'while',
+            current = self.stackNextFrame(label, 'while', node.nodeid,
                                           frametype='while',
                                           functioncall=self.frames.isFunctioncall(),
                                           taskcall=self.frames.isTaskcall(),
@@ -516,7 +517,7 @@ class BindVisitor(NodeVisitor):
 
     def visit_GenerateStatement(self, node):
         label = self.labels.get(self.frames.getLabelKey('generate'))
-        current = self.stackNextFrame(label, 'generate',
+        current = self.stackNextFrame(label, 'generate', node.nodeid,
                                       generate=True)
 
         self.generic_visit(node)
@@ -529,7 +530,7 @@ class BindVisitor(NodeVisitor):
         else:
             label = self.labels.get(self.frames.getLabelKey('block'))
 
-        current = self.stackNextFrame(label, 'block',
+        current = self.stackNextFrame(label, 'block', node.nodeid,
                                       frametype='block',
                                       functioncall=self.frames.isFunctioncall(),
                                       taskcall=self.frames.isTaskcall(),
@@ -568,7 +569,7 @@ class BindVisitor(NodeVisitor):
         self.copyFrameInfo(current + ScopeLabel(instname, 'module'))
         return current
 
-    def stackNextFrame(self, label, scopetype,
+    def stackNextFrame(self, label, scopetype, nodeid,
                        frametype='none',
                        alwaysinfo=None, condition=None,
                        module=False, functioncall=False, taskcall=False,
@@ -583,7 +584,7 @@ class BindVisitor(NodeVisitor):
                                            alwaysinfo=alwaysinfo, condition=condition,
                                            module=module, functioncall=functioncall, taskcall=taskcall,
                                            generate=generate, always=always, initial=initial,
-                                           loop=loop, loop_iter=loop_iter)
+                                           loop=loop, loop_iter=loop_iter, framenodeid=nodeid)
 
         self.frames.setCurrent(nextscope)
         new_current = self.frames.getCurrent()
@@ -657,11 +658,11 @@ class BindVisitor(NodeVisitor):
                 ptr = bind.ptr
                 part_msb = None
                 part_lsb = None
-                condlist, flowlist = self.getCondflow(scope)
+                condlist, flowlist, framenodeidlist = self.getCondflow(scope)
                 alwaysinfo = bind.alwaysinfo
                 raw_tree = bind.tree
                 new_bind = self.makeBind(name, msb, lsb, ptr, part_msb, part_lsb,
-                                         raw_tree, condlist, flowlist,
+                                         raw_tree, condlist, flowlist, framenodeidlist,
                                          alwaysinfo=alwaysinfo)
                 self.dataflow.addBind(name, new_bind)
 
@@ -1563,13 +1564,13 @@ class BindVisitor(NodeVisitor):
             if flowlist[0]:
                 return DFBranch(
                     condlist[0],
-                    self.makeBranchTree(condlist[1:], flowlist[1:], node),
-                    None, nodeid=framenodeidlist[1:])
+                    self.makeBranchTree(condlist[1:], flowlist[1:], framenodeidlist[1:], node),
+                    None, nodeid=framenodeidlist[0])
             else:
                 return DFBranch(
                     condlist[0],
                     None,
-                    self.makeBranchTree(condlist[1:], flowlist[1:], node), nodeid=framenodeidlist[1:])
+                    self.makeBranchTree(condlist[1:], flowlist[1:], framenodeidlist[1:], node), nodeid=framenodeidlist[0])
 
     def appendBranchTree(self, base, pos, tree):
         if len(pos) == 0:
