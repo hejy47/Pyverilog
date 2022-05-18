@@ -388,7 +388,6 @@ class BindVisitor(NodeVisitor):
                     cond = Lor(cond, Eq(comp, c))
             else:
                 cond = Eq(comp, case.cond[0])
-        cond.nodeid = case.nodeid
         # else: raise Exception
         label = self.labels.get(self.frames.getLabelKey('if'))
         current = self.stackNextFrame(label, 'if', case.nodeid,

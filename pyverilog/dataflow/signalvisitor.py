@@ -225,13 +225,13 @@ class SignalVisitor(NodeVisitor):
 
     def visit_CaseStatement(self, node):
         start_frame = self.frames.getCurrent()
-        self._case(node.comp, node.caselist, node.nodeid)
+        self._case(node.comp, node.caselist)
         self.frames.setCurrent(start_frame)
 
     def visit_CasexStatement(self, node):
         return self.visit_CaseStatement(node)
 
-    def _case(self, comp, caselist, nodeid):
+    def _case(self, comp, caselist):
         if len(caselist) == 0:
             return
         case = caselist[0]
@@ -243,7 +243,6 @@ class SignalVisitor(NodeVisitor):
                     cond = Lor(cond, Eq(comp, c))
             else:
                 cond = Eq(comp, case.cond[0])
-        cond.nodeid = case.nodeid
         label = self.labels.get(self.frames.getLabelKey('if'))
         current = self.frames.addFrame(ScopeLabel(label, 'if'),
                                        frametype='ifthen',
@@ -252,7 +251,7 @@ class SignalVisitor(NodeVisitor):
                                        taskcall=self.frames.isTaskcall(),
                                        generate=self.frames.isGenerate(),
                                        always=self.frames.isAlways(),
-                                       initial=self.frames.isInitial(), framenodeid=nodeid)
+                                       initial=self.frames.isInitial(), framenodeid=case.nodeid)
         if case.statement is not None:
             self.visit(case.statement)
         self.frames.setCurrent(current)
@@ -266,8 +265,8 @@ class SignalVisitor(NodeVisitor):
                                        taskcall=self.frames.isTaskcall(),
                                        generate=self.frames.isGenerate(),
                                        always=self.frames.isAlways(),
-                                       initial=self.frames.isInitial(), framenodeid=nodeid)
-        self._case(comp, caselist[1:], nodeid)
+                                       initial=self.frames.isInitial(), framenodeid=case.nodeid)
+        self._case(comp, caselist[1:])
 
     def visit_ForStatement(self, node):
         # pre-statement

@@ -240,7 +240,9 @@ class DFOperator(DFNotTerminal):
         ret += ' Next:'
         for n in self.nextnodes:
             ret += n.tostr() + ','
-        ret = ret[0:-1] + '[{}])'.format(self.nodeid)
+        ret = ret[0:-1] + ')'
+        if self.nodeid:
+            ret = ret[0:-1] + '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
