@@ -52,6 +52,9 @@ class Node(object):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
+        
+        if self.nodeid != other.nodeid:
+            return False
 
         self_attrs = tuple([getattr(self, a) for a in self.attr_names])
         other_attrs = tuple([getattr(other, a) for a in other.attr_names])
