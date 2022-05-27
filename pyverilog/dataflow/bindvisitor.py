@@ -1329,7 +1329,6 @@ class BindVisitor(NodeVisitor):
 
             if msb is None and lsb is None:
                 msb, lsb = self.getTermWidth(name)
-            import pdb; pdb.set_trace()
             diff = reorder.reorder(DFOperator((msb, lsb), 'Minus'))
             part_lsb = part_offset
             part_msb = reorder.reorder(DFOperator((part_offset, diff), 'Plus'))
