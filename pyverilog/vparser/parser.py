@@ -1325,9 +1325,19 @@ class VerilogParser(object):
         p[0] = Sens(p[2], 'posedge', lineno=p.lineno(1))
         p.set_lineno(0, p.lineno(1))
 
+    def p_posedgesig_with_paren(self, p):
+        'edgesig : POSEDGE LPAREN edgesig_base RPAREN'
+        p[0] = Sens(p[3], 'posedge', lineno=p.lineno(1))
+        p.set_lineno(0, p.lineno(1))
+
     def p_negedgesig(self, p):
         'edgesig : NEGEDGE edgesig_base'
         p[0] = Sens(p[2], 'negedge', lineno=p.lineno(1))
+        p.set_lineno(0, p.lineno(1))
+
+    def p_negedgesig_with_paren(self, p):
+        'edgesig : NEGEDGE LPAREN edgesig_base RPAREN'
+        p[0] = Sens(p[3], 'negedge', lineno=p.lineno(1))
         p.set_lineno(0, p.lineno(1))
 
     def p_edgesig_base_identifier(self, p):
@@ -1426,6 +1436,7 @@ class VerilogParser(object):
         | unique_case_statement
         | for_statement
         | while_statement
+        | repeat_statement
         | event_statement
         | wait_statement
         | forever_statement
@@ -1652,6 +1663,17 @@ class VerilogParser(object):
 
     def p_whilecontent_statement(self, p):
         'whilecontent_statement : basic_statement'
+        p[0] = p[1]
+        p.set_lineno(0, p.lineno(1))
+
+    # --------------------------------------------------------------------------
+    def p_repeat_statement(self, p):
+        'repeat_statement : REPEAT LPAREN cond RPAREN repeatcontent_statement'
+        p[0] = RepeatStatement(p[3], p[5], lineno=p.lineno(1))
+        p.set_lineno(0, p.lineno(1))
+
+    def p_repeatcontent_statement(self, p):
+        'repeatcontent_statement : basic_statement'
         p[0] = p[1]
         p.set_lineno(0, p.lineno(1))
 
@@ -2173,7 +2195,7 @@ class VerilogParser(object):
         """
         if isinstance(p[1], Decl):
             for r in p[1].list:
-                if (not isinstance(r, Input) and not isinstance(r, Reg) and
+                if (not isinstance(r, Input) and not isinstance(r, Output) and not isinstance(r, Reg) and
                         not isinstance(r, Integer)):
                     raise ParseError("Syntax Error")
         p[0] = p[1]

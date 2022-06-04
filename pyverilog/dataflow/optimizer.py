@@ -179,7 +179,7 @@ class VerilogOptimizer(object):
             if n.width > width:
                 width = n.width
         rslt = self._evalOperator(operator, tuple(valuelist), width)
-        return DFEvalValue(rslt, width, nodeid=rslt.nodeid)
+        return DFEvalValue(rslt, width)
 
     def _evalOperator(self, operator, valuelist, width=default_width):
         if operator == 'Uminus':

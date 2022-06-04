@@ -898,6 +898,22 @@ class WhileStatement(Node):
             nodelist.append(self.statement)
         return tuple(nodelist)
 
+class RepeatStatement(Node):
+    attr_names = ()
+
+    def __init__(self, looptime, statement, lineno=0):
+        self.lineno = lineno
+        self.nodeid = None
+        self.looptime = looptime
+        self.statement = statement
+
+    def children(self):
+        nodelist = []
+        if self.looptime:
+            nodelist.append(self.looptime)
+        if self.statement:
+            nodelist.append(self.statement)
+        return tuple(nodelist)
 
 class CaseStatement(Node):
     attr_names = ()

@@ -1016,7 +1016,7 @@ class BindVisitor(NodeVisitor):
     def makeDFTree(self, node, scope):
         if isinstance(node, str):
             name = self.searchTerminal(node, scope)
-            return DFTerminal(name, nodeid=node.nodeid)
+            return DFTerminal(name)
 
         if isinstance(node, Identifier):
             if node.scope is not None:
