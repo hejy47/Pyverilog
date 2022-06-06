@@ -335,13 +335,14 @@ class DFPointer(DFNotTerminal):
     def tostr(self):
         ret = '(Pointer'
         ret += ' Var:' + self.var.tostr()
-        ret += ' PTR:' + self.ptr.tostr()
+        ret += ' PTR:[{}]'.format(','.join([ptri.tostr() for ptri in self.ptr]))
         ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
         ret = self.var.tocode(dest)
-        ret += '[' + self.ptr.tocode(dest) + ']'
+        for ptri in self.ptr:
+            ret += '[' + ptri.tocode(dest) + ']'
         return ret
 
     def children(self):
@@ -349,7 +350,7 @@ class DFPointer(DFNotTerminal):
         if self.var is not None:
             nodelist.append(self.var)
         if self.ptr is not None:
-            nodelist.append(self.ptr)
+            nodelist.extend(self.ptr)
         return tuple(nodelist)
 
     def __eq__(self, other):
@@ -839,7 +840,7 @@ class Bind(object):
         if self.lsb is not None:
             ret += ' lsb:' + self.lsb.tostr()
         if self.ptr is not None:
-            ret += ' ptr:' + self.ptr.tostr()
+            ret += ' ptr:[{}]'.format(','.join([ptri.tostr() for ptri in self.ptr]))
         if self.tree is not None:
             ret += ' tree:' + self.tree.tostr()
         ret += ')'
@@ -860,7 +861,8 @@ class Bind(object):
     def getdest(self):
         dest = util.toFlatname(self.dest)
         if self.ptr is not None:
-            dest += '[' + self.ptr.tocode(None) + ']'
+            for ptri in self.ptr:
+                dest += '[' + ptri.tocode(None) + ']'
         if self.msb is not None and self.lsb is not None:
             msbcode = self.msb.tocode(None)
             lsbcode = self.lsb.tocode(None)
