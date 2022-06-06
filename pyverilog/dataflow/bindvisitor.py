@@ -1397,9 +1397,10 @@ class BindVisitor(NodeVisitor):
             name = self.searchTerminal(left.var.name, scope)
             if left.var.scope is not None:
                 name = left.var.scope + ScopeLabel(left.var.name, 'signal')
-            if self.getTermDims(name) is not None:
-                return (name, None, None, ptr)
-            return (name, ptr, copy.deepcopy(ptr), None)
+            # if self.getTermDims(name) is not None:
+            #     return (name, None, None, ptr)
+            # return (name, ptr, copy.deepcopy(ptr), None)
+            return (name, None, None, ptr)
 
         raise verror.FormatError("unsupported AST node type: %s %s" %
                                  (str(type(left)), str(left)))
