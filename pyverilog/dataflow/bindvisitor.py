@@ -1197,11 +1197,12 @@ class BindVisitor(NodeVisitor):
     def removeOverwrappedCondition(self, tree, current_bindlist, scope):
         msb, lsb = self.getTermWidth(tree.name)
         merged_tree = self.getFitTree(current_bindlist, msb, lsb)
-        condlist, flowlist = self.getCondflow(scope)
+        condlist, flowlist, framenodeidlist = self.getCondflow(scope)
         (merged_tree,
          rest_condlist,
          rest_flowlist,
-         match_flowlist) = self.diffBranchTree(merged_tree, condlist, flowlist)
+         rest_framenodeidlist,
+         match_flowlist) = self.diffBranchTree(merged_tree, condlist, flowlist, framenodeidlist)
         return replace.replaceUndefined(merged_tree, tree.name)
 
     def resolveBlockingAssign(self, tree, scope):
@@ -1389,18 +1390,13 @@ class BindVisitor(NodeVisitor):
             return (name, msb, lsb, None)
 
         if isinstance(left, Pointer):
+            ptr = [self.optimize(self.makeDFTree(left.ptr, scope))]
             if isinstance(left.var, Pointer):
-                name, msb, lsb, ptr = self.getDst(left.var, scope)
-                if msb is None and lsb is None:
-                    msb = self.optimize(self.makeDFTree(left.ptr, scope))
-                    lsb = copy.deepcopy(msb)
-                else:
-                    raise verror.FormatError("%s is not array" % str(name))
-                return (name, msb, lsb, ptr)
+                name, msb, lsb, cptr = self.getDst(left.var, scope)
+                return (name, msb, lsb, cptr+ptr)
             name = self.searchTerminal(left.var.name, scope)
             if left.var.scope is not None:
                 name = left.var.scope + ScopeLabel(left.var.name, 'signal')
-            ptr = self.optimize(self.makeDFTree(left.ptr, scope))
             if self.getTermDims(name) is not None:
                 return (name, None, None, ptr)
             return (name, ptr, copy.deepcopy(ptr), None)

@@ -341,7 +341,7 @@ class VerilogOptimizer(object):
                 width = abs(msb - lsb) + 1
                 return width
             return 1
-        if isinstance(tree, DFSyscall):
+        if isinstance(node, DFSyscall):
             return self.default_width
 
         raise FormatError('Illegal Pointer in getWidth()')
@@ -416,7 +416,7 @@ class VerilogOptimizer(object):
             lsb = self.optimizeHierarchy(tree.lsb)
             var = self.optimizeHierarchy(tree.var)
             if isinstance(var, DFConcat) and isinstance(msb, DFEvalValue) and isinstance(lsb, DFEvalValue):
-                return self.takePart(var.nextnodes, msb, lsb)
+                return self.takePart(var.nextnodes, msb, lsb, var.nodeid)
             if isinstance(msb, DFEvalValue) and isinstance(lsb, DFEvalValue) and lsb.value == 0 and self.getWidth(var) == (msb.value + 1):
                 return var
             return DFPartselect(var, msb, lsb, nodeid=tree.nodeid)
@@ -424,7 +424,7 @@ class VerilogOptimizer(object):
             ptr = self.optimizeHierarchy(tree.ptr)
             var = self.optimizeHierarchy(tree.var)
             if isinstance(var, DFConcat) and isinstance(ptr, DFEvalValue):
-                return self.takePoint(var.nextnodes, ptr)
+                return self.takePoint(var.nextnodes, ptr, var.nodeid)
             return DFPointer(var, ptr)
         if isinstance(tree, DFConcat):
             nextnodes = []
@@ -439,10 +439,10 @@ class VerilogOptimizer(object):
 
         raise FormatError('Can not merge due to unrecognized type of tree')
 
-    def takePoint(self, nextnodes, ptr):
-        return self.takePart(nextnodes, ptr, ptr)
+    def takePoint(self, nextnodes, ptr, nodeid):
+        return self.takePart(nextnodes, ptr, ptr, nodeid)
 
-    def takePart(self, nextnodes, msb, lsb):
+    def takePart(self, nextnodes, msb, lsb, nodeid):
         widlist = []
         for n in reversed(nextnodes):  # from LSB
             widlist.append(self.getWidth(n))
@@ -477,20 +477,20 @@ class VerilogOptimizer(object):
         usednodes.reverse()
 
         if len(usednodes) == 0:
-            return DFUndefined(cutwidth)
+            return DFUndefined(cutwidth, nodeid=nodeid)
         if msboffset < 0:
             if lsboffset == 0:
-                return DFConcat((DFUndefined(cutwidth - widsum),) + tuple(usednodes))
+                return DFConcat((DFUndefined(cutwidth - widsum),) + tuple(usednodes), nodeid=nodeid)
             if len(usednodes) == 1:
-                return DFConcat((DFUndefined(cutwidth - widsum + lsboffset), DFPartselect(usednodes[0], DFEvalValue(widsum - 1), DFEvalValue(lsb + lsboffset))))
-            return DFConcat((DFUndefined(cutwidth - widsum + lsboffset), DFPartselect(DFConcat(tuple(usednodes)), DFEvalValue(widsum - 1), DFEvalValue(lsb + lsboffset))))
+                return DFConcat((DFUndefined(cutwidth - widsum + lsboffset), DFPartselect(usednodes[0], DFEvalValue(widsum - 1), DFEvalValue(lsb + lsboffset))), nodeid=nodeid)
+            return DFConcat((DFUndefined(cutwidth - widsum + lsboffset), DFPartselect(DFConcat(tuple(usednodes)), DFEvalValue(widsum - 1), DFEvalValue(lsb + lsboffset))), nodeid=nodeid)
         if lsboffset == 0 and msboffset == 0:
             if len(usednodes) == 1:
                 return usednodes[0]
-            return DFConcat(tuple(usednodes))
+            return DFConcat(tuple(usednodes), nodeid=nodeid)
 
         if len(usednodes) == 1:
-            return DFPartselect(usednodes[0], DFEvalValue(msb - msboffset), DFEvalValue(lsb + lsboffset))
+            return DFPartselect(usednodes[0], DFEvalValue(msb - msboffset), DFEvalValue(lsb + lsboffset), nodeid=nodeid)
 
         ret_usednodes = []
         usednodes_cnt = 0
@@ -499,18 +499,17 @@ class VerilogOptimizer(object):
                 lsbval = lsboffset
                 msbval = widlist[usednodes_cnt] - 1
                 ret_usednodes.append(self.optimizeConstant(
-                    DFPartselect(node, DFEvalValue(msbval), DFEvalValue(lsbval))))
+                    DFPartselect(node, DFEvalValue(msbval), DFEvalValue(lsbval), nodeid=node.nodeid)))
             elif usednodes_cnt == len(usednodes) - 1 and msboffset > 0:
                 lsbval = 0
                 msbval = widlist[usednodes_cnt] - msboffset - 1
                 ret_usednodes.append(self.optimizeConstant(
-                    DFPartselect(node, DFEvalValue(msbval), DFEvalValue(lsbval))))
+                    DFPartselect(node, DFEvalValue(msbval), DFEvalValue(lsbval), nodeid=node.nodeid)))
             else:
                 ret_usednodes.append(self.optimizeConstant(node))
             usednodes_cnt += 1
         ret_usednodes.reverse()
-        import pdb; pdb.set_trace()
-        return DFPartselect(DFConcat(tuple(ret_usednodes)), DFEvalValue(msb - msboffset), DFEvalValue(lsb + lsboffset))
+        return DFPartselect(DFConcat(tuple(ret_usednodes)), DFEvalValue(msb - msboffset), DFEvalValue(lsb + lsboffset), nodeid=nodeid)
 
     def _isPowerOf2(self, value):
         if value <= 0:
@@ -566,8 +565,7 @@ class VerilogOptimizer(object):
             else:
                 constvallist = []
                 ret_nodes.append(n)
-        import pdb; pdb.set_trace()
-        return DFConcat(tuple(ret_nodes))
+        return DFConcat(tuple(ret_nodes), nodeid=concatnode.nodeid)
 
     def mergeConcat_undefined(self, concatnode):
         ret_nodes = []
@@ -581,8 +579,7 @@ class VerilogOptimizer(object):
             else:
                 width = 0
                 ret_nodes.append(n)
-        import pdb; pdb.set_trace()
-        return DFConcat(tuple(ret_nodes))
+        return DFConcat(tuple(ret_nodes), nodeid=concatnode.nodeid)
 
     def mergeConcat_partselect(self, concatnode):
         ret_nodes = []
@@ -612,8 +609,7 @@ class VerilogOptimizer(object):
             last_node = n
         if len(ret_nodes) == 1:
             return ret_nodes[0]
-        import pdb; pdb.set_trace()
-        return DFConcat(tuple(ret_nodes))
+        return DFConcat(tuple(ret_nodes), nodeid=concatnode.nodeid)
 
     def mergeConcat_branch(self, concatnode):
         nodelist = []
@@ -656,8 +652,7 @@ class VerilogOptimizer(object):
             last_node = n
         if len(nodelist) == 1:
             return nodelist[0]
-        import pdb; pdb.set_trace()
-        return DFConcat(tuple(nodelist))
+        return DFConcat(tuple(nodelist), nodeid=concatnode.nodeid)
 
     def mergeIdenticalNodes(self, node):
         if not isinstance(node, DFOperator):

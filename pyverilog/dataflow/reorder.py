@@ -43,7 +43,7 @@ def reorder(tree):
             resolvednodes.append(reorder(n))
         for r in resolvednodes:
             if isinstance(r, DFBranch):
-                return insertOpList(resolvednodes, tree.operator)
+                return insertOpList(resolvednodes, tree.operator, nodeid=tree.nodeid)
         return DFOperator(tuple(resolvednodes), tree.operator, nodeid=tree.nodeid)
 
     if isinstance(tree, DFConcat):
@@ -52,7 +52,7 @@ def reorder(tree):
             resolvednodes.append(reorder(n))
         for r in resolvednodes:
             if isinstance(r, DFBranch):
-                return insertConcat(resolvednodes)
+                return insertConcat(resolvednodes, nodeid=tree.nodeid)
         return DFConcat(tuple(resolvednodes), nodeid=tree.nodeid)
 
     if isinstance(tree, DFPartselect):
@@ -102,30 +102,29 @@ def insertOp(left, right, op):
         return DFBranch(left.condnode, insertOp(left.truenode, right, op), insertOp(left.falsenode, right, op), nodeid=left.nodeid)
     elif isinstance(right, DFBranch):
         return DFBranch(right.condnode, insertOp(left, right.truenode, op), insertOp(left, right.falsenode, op), nodeid=right.nodeid)
-    import pdb; pdb.set_trace()
     return DFOperator((left, right), op, nodeid=op.nodeid)
 
 
-def insertOpList(nextnodes, op):
+def insertOpList(nextnodes, op, nodeid):
     donenodes = []
     restnodes = list(nextnodes)
     for n in nextnodes:
         restnodes.pop(0)
         if isinstance(n, DFBranch):
-            return DFBranch(n.condnode, insertOpList(tuple(donenodes + [n.truenode, ] + restnodes), op), insertOpList(tuple(donenodes + [n.falsenode, ] + restnodes), op), nodeid=n.nodeid)
+            return DFBranch(n.condnode, insertOpList(tuple(donenodes + [n.truenode, ] + restnodes), op, n.truenode.nodeid), insertOpList(tuple(donenodes + [n.falsenode, ] + restnodes), op, n.falsenode.nodeid), nodeid=n.nodeid)
         donenodes.append(n)
-    return DFOperator(nextnodes, op, nodeid=nextnodes.nodeid)
+    return DFOperator(nextnodes, op, nodeid=nodeid)
 
 
-def insertConcat(nextnodes):
+def insertConcat(nextnodes, nodeid):
     donenodes = []
     restnodes = list(nextnodes)
     for n in nextnodes:
         restnodes.pop(0)
         if isinstance(n, DFBranch):
-            return DFBranch(n.condnode, insertConcat(tuple(donenodes + [n.truenode, ] + restnodes)), insertConcat(tuple(donenodes + [n.falsenode, ] + restnodes)), nodeid=n.nodeid)
+            return DFBranch(n.condnode, insertConcat(tuple(donenodes + [n.truenode, ] + restnodes), n.truenode.nodeid), insertConcat(tuple(donenodes + [n.falsenode, ] + restnodes), n.falsenode.nodeid), nodeid=n.nodeid)
         donenodes.append(n)
-    return DFConcat(nextnodes, nodeid=nextnodes.nodeid)
+    return DFConcat(nextnodes, nodeid=nodeid)
 
 
 def insertPartselect(var, msb, lsb):
