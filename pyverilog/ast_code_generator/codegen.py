@@ -409,6 +409,12 @@ class ASTCodeGenerator(ConvertVisitor):
         template_dict = {
             'items': [self.visit(item) for item in node.list],
         }
+        if isinstance(node.list[-1], Assign):
+            sigtypes = ""
+            for item in template_dict['items'][:-1]:
+                sigtypes += item[:item.rindex(' ')] + ' '
+            decl = template_dict['items'][-1].replace("assign ", sigtypes)
+            template_dict['items'] = [decl]
         rslt = template.render(template_dict)
         return rslt
 
