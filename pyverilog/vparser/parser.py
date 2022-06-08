@@ -2265,20 +2265,20 @@ class VerilogParser(object):
         p.set_lineno(0, p.lineno(1))
 
     # fix me: to support task-call-statement
-    # def p_single_statement_taskcall(self, p):
-    #    'single_statement : functioncall SEMICOLON'
-    #    p[0] = SingleStatement(p[1], lineno=p.lineno(1))
-    #    p.set_lineno(0, p.lineno(1))
+    def p_single_statement_taskcall(self, p):
+       'single_statement : delays functioncall SEMICOLON'
+       p[0] = SingleStatement(p[2], lineno=p.lineno(1))
+       p.set_lineno(0, p.lineno(1))
 
-    # def p_single_statement_taskcall_empty(self, p):
-    #    'single_statement : taskcall SEMICOLON'
-    #    p[0] = SingleStatement(p[1], lineno=p.lineno(1))
-    #    p.set_lineno(0, p.lineno(1))
+    def p_single_statement_taskcall_empty(self, p):
+       'single_statement : delays taskcall SEMICOLON'
+       p[0] = SingleStatement(p[2], lineno=p.lineno(1))
+       p.set_lineno(0, p.lineno(1))
 
-    # def p_taskcall_empty(self, p):
-    #    'taskcall : identifier'
-    #    p[0] = FunctionCall(p[1], (), lineno=p.lineno(1))
-    #    p.set_lineno(0, p.lineno(1))
+    def p_taskcall_empty(self, p):
+       'taskcall : identifier'
+       p[0] = FunctionCall(p[1], (), lineno=p.lineno(1))
+       p.set_lineno(0, p.lineno(1))
 
     # --------------------------------------------------------------------------
     def p_empty(self, p):
