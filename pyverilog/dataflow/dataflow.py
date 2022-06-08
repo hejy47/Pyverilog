@@ -108,7 +108,7 @@ class DFTerminal(DFNode):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.name == other.name
+        return self.name == other.name and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash(self.name)
@@ -138,7 +138,7 @@ class DFConstant(DFNode):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.value == other.value
+        return self.value == other.value and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash(self.value)
@@ -265,7 +265,7 @@ class DFOperator(DFNotTerminal):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.operator == other.operator and self.nextnodes == other.nextnodes
+        return self.operator == other.operator and self.nextnodes == other.nextnodes and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash((self.operator, tuple(self.nextnodes)))
@@ -315,7 +315,7 @@ class DFPartselect(DFNotTerminal):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.var == other.var and self.msb == other.msb and self.lsb == other.lsb
+        return self.var == other.var and self.msb == other.msb and self.lsb == other.lsb and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash((self.var, self.msb, self.lsb))
@@ -356,7 +356,7 @@ class DFPointer(DFNotTerminal):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.var == other.var and self.ptr == other.ptr
+        return self.var == other.var and self.ptr == other.ptr and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash((self.var, self.ptr))
@@ -397,7 +397,7 @@ class DFConcat(DFNotTerminal):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.nextnodes == other.nextnodes
+        return self.nextnodes == other.nextnodes and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash(tuple(self.nextnodes))
@@ -486,7 +486,8 @@ class DFBranch(DFNotTerminal):
             return False
         return (self.condnode == other.condnode
                 and self.truenode == other.truenode
-                and self.falsenode == other.falsenode)
+                and self.falsenode == other.falsenode
+                and self.nodeid == other.nodeid)
 
     def __hash__(self):
         return hash((self.condnode, self.truenode, self.falsenode))
@@ -546,7 +547,8 @@ class DFEvalValue(DFNode):
         return (self.value == other.value
                 and self.width == other.width
                 and self.isfloat == other.isfloat
-                and self.isstring == other.isstring)
+                and self.isstring == other.isstring
+                and self.nodeid == other.nodeid)
 
     def __hash__(self):
         return hash((self.value, self.width, self.isfloat, self.isstring))
@@ -582,7 +584,7 @@ class DFUndefined(DFNode):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.width == other.width
+        return self.width == other.width and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash(self.width)
@@ -618,7 +620,7 @@ class DFHighImpedance(DFNode):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.width == other.width
+        return self.width == other.width and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash(self.width)
@@ -653,7 +655,7 @@ class DFDelay(DFNotTerminal):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        return self.nextnodes == other.nextnodes
+        return self.nextnodes == other.nextnodes and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash(tuple(self.nextnodes))
@@ -698,7 +700,7 @@ class DFSyscall(DFNotTerminal):
             return False
         if self.syscall != other.syscall:
             return False
-        return self.nextnodes == other.nextnodes
+        return self.nextnodes == other.nextnodes and self.nodeid == other.nodeid
 
     def __hash__(self):
         return hash(tuple(self.nextnodes))
