@@ -1136,39 +1136,6 @@ class BindVisitor(NodeVisitor):
 
             return DFTerminal(varname)
 
-        if isinstance(node, TaskCall):
-            task = self.searchTask(node.name.name, scope)
-            label = self.labels.get(self.frames.getLabelKey('taskcall'))
-
-            current = self.frames.addFrame(
-                ScopeLabel(label, 'taskcall'),
-                taskcall=True, generate=self.frames.isGenerate(),
-                always=self.frames.isAlways(), framenodeid=node.nodeid)
-
-            varname = self.frames.getCurrent() + ScopeLabel(task.name, 'signal')
-
-            taskports = self.searchTaskPorts(node.name.name, scope)
-            taskargs = node.args
-
-            if len(taskports) != len(taskargs):
-                raise verror.FormatError("%s takes exactly %d arguments. (%d given)" %
-                                         (task.name.name, len(taskports), len(taskargs)))
-            for port in taskports:
-                self.addTerm(Wire(port.name, port.width))
-
-            lscope = self.frames.getCurrent()
-            rscope = scope
-            task_i = 0
-            for port in taskports:
-                arg = taskargs[task_i]
-                dst = self.getDestinations(port.name, lscope)
-                self.addDataflow(dst, arg, lscope, rscope)
-                task_i += 1
-
-            self.visit(taskargs)
-            self.frames.setCurrent(current)
-            return DFTerminal(varname, nodeid=node.nodeid)
-
         if isinstance(node, SystemCall):
             if node.syscall == 'unsigned':
                 return self.makeDFTree(node.args[0], scope)

@@ -1190,24 +1190,6 @@ class Task(Node):
         return tuple(nodelist)
 
 
-class TaskCall(Node):
-    attr_names = ()
-
-    def __init__(self, name, args, lineno=0):
-        self.lineno = lineno
-        self.nodeid = None
-        self.name = name
-        self.args = args
-
-    def children(self):
-        nodelist = []
-        if self.name:
-            nodelist.append(self.name)
-        if self.args:
-            nodelist.extend(self.args)
-        return tuple(nodelist)
-
-
 class GenerateStatement(Node):
     attr_names = ()
 
