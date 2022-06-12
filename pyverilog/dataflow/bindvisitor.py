@@ -221,12 +221,12 @@ class BindVisitor(NodeVisitor):
                                       generate=self.frames.isGenerate(),
                                       always=True)
 
-        (clock_name, clock_edge, clock_bit,
-         reset_name, reset_edge, reset_bit,
+        (clock, clock_name, clock_edge, clock_bit,
+         reset_name, reset, reset_edge, reset_bit,
          senslist) = self._createAlwaysinfo(node, current)
 
-        self.frames.setAlwaysInfo(clock_name, clock_edge, clock_bit,
-                                  reset_name, reset_edge, reset_bit, senslist)
+        self.frames.setAlwaysInfo(clock, clock_name, clock_edge, clock_bit,
+                                  reset, reset_name, reset_edge, reset_bit, senslist)
 
         self.generic_visit(node)
         self.frames.setCurrent(current)
@@ -243,9 +243,11 @@ class BindVisitor(NodeVisitor):
     def _createAlwaysinfo(self, node, scope):
         sens = None
         senslist = []
+        clock = None
         clock_edge = None
         clock_name = None
         clock_bit = None
+        reset = None
         reset_edge = None
         reset_name = None
         reset_bit = None
@@ -262,10 +264,12 @@ class BindVisitor(NodeVisitor):
                 bit = 0
 
             if signaltype.isClock(signame):
+                clock = l
                 clock_name = self.searchTerminal(signame, scope)
                 clock_edge = l.type
                 clock_bit = bit
             elif signaltype.isReset(signame):
+                reset = l
                 reset_name = self.searchTerminal(signame, scope)
                 reset_edge = l.type
                 reset_bit = bit
@@ -277,7 +281,7 @@ class BindVisitor(NodeVisitor):
         if reset_edge is not None and len(senslist) > 0:
             raise verror.FormatError('Illegal sensitivity list')
 
-        return (clock_name, clock_edge, clock_bit, reset_name, reset_edge, reset_bit, senslist)
+        return (clock, clock_name, clock_edge, clock_bit, reset, reset_name, reset_edge, reset_bit, senslist)
 
     def visit_IfStatement(self, node):
         if self.frames.isFunctiondef() and not self.frames.isFunctioncall():
