@@ -371,9 +371,9 @@ class SignalVisitor(NodeVisitor):
                 raise verror.FormatError("Multiple definitions for Constant")
             for definition in definitions:
                 simple_definition = copy.deepcopy(definition)
-                if simple_definition.width is not None:
-                    simple_definition.width.msb = None
-                    simple_definition.width.lsb = None
+                # if simple_definition.width is not None:
+                #     simple_definition.width.msb = None
+                #     simple_definition.width.lsb = None
                 term = self.makeConstantTerm(name, simple_definition, current)
                 self.setConstantTerm(name, term)
 
