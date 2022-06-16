@@ -623,7 +623,7 @@ class BindVisitor(NodeVisitor):
                     if isinstance(definition, Genvar):
                         continue
                     value = self.optimize(self.getTree(definition.value, current))
-                    if not isinstance(value, DFEvalValue):
+                    if not isinstance(value, DFEvalValue) and not isinstance(value, DFConstant):
                         all_passed = False
                         continue
                     self.setConstant(name, value)
@@ -1240,7 +1240,6 @@ class BindVisitor(NodeVisitor):
                     return DFPointer(tree.var, resolved_ptr, nodeid=tree.nodeid)
                 new_tree = DFPointer(tree.var, resolved_ptr, nodeid=tree.nodeid)
                 for bind in current_bindlist:
-                    import pdb; pdb.set_trace()
                     new_tree = DFBranch(DFOperator((bind.ptr, resolved_ptr), 'Eq'),
                                         bind.tree, new_tree)
                 print(("Warning: "
@@ -1287,7 +1286,6 @@ class BindVisitor(NodeVisitor):
             concatlist.append(bind.tree)
             last_msb = -1 if bind.msb is None else bind.msb.value
             last_ptr = -1 if not isinstance(bind.ptr, DFEvalValue) else bind.ptr.value
-        import pdb; pdb.set_trace()
         return DFConcat(tuple(reversed(concatlist)))
 
     def getDestinations(self, left, scope):
