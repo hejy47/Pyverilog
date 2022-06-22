@@ -222,7 +222,7 @@ class BindVisitor(NodeVisitor):
                                       always=True)
 
         (clock, clock_name, clock_edge, clock_bit,
-         reset_name, reset, reset_edge, reset_bit,
+         reset, reset_name, reset_edge, reset_bit,
          senslist) = self._createAlwaysinfo(node, current)
 
         self.frames.setAlwaysInfo(clock, clock_name, clock_edge, clock_bit,
