@@ -335,14 +335,13 @@ class DFPointer(DFNotTerminal):
     def tostr(self):
         ret = '(Pointer'
         ret += ' Var:' + self.var.tostr()
-        ret += ' PTR:[{}]'.format(','.join([ptri.tostr() for ptri in self.ptr]))
+        ret += ' PTR:' + self.ptr.tostr()
         ret += '[{}])'.format(self.nodeid)
         return ret
 
     def tocode(self, dest='dest'):
         ret = self.var.tocode(dest)
-        for ptri in self.ptr:
-            ret += '[' + ptri.tocode(dest) + ']'
+        ret += '[' + self.ptr.tocode(dest) + ']'
         return ret
 
     def children(self):
@@ -350,7 +349,7 @@ class DFPointer(DFNotTerminal):
         if self.var is not None:
             nodelist.append(self.var)
         if self.ptr is not None:
-            nodelist.extend(self.ptr)
+            nodelist.append(self.ptr)
         return tuple(nodelist)
 
     def __eq__(self, other):
