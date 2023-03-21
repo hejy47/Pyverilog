@@ -57,7 +57,8 @@ class VerilogPreprocessor(object):
 
         self.filelist += self.temp_files_paths
 
-        iverilog = os.environ.get('PYVERILOG_IVERILOG')
+        # iverilog = os.environ.get('PYVERILOG_IVERILOG')
+        iverilog = os.environ.get('IVERILOG_PATH')
         if iverilog is None:
             iverilog = 'iverilog'
 
