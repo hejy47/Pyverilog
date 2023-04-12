@@ -1060,7 +1060,7 @@ class BindVisitor(NodeVisitor):
             left_df = self.makeDFTree(node.left, scope)
             right_df = self.makeDFTree(node.right, scope)
             if isinstance(left_df, DFBranch) or isinstance(right_df, DFBranch):
-                return reorder.insertOp(left_df, right_df, node.__class__.__name__)
+                return reorder.insertOp(left_df, right_df, node.__class__.__name__, nodeid=node.nodeid)
             return DFOperator((left_df, right_df,), node.__class__.__name__, nodeid=node.nodeid)
 
         if isinstance(node, Partselect):
@@ -1086,7 +1086,7 @@ class BindVisitor(NodeVisitor):
                 nextnodes.append(self.makeDFTree(n, scope))
             for n in nextnodes:
                 if isinstance(n, DFBranch):
-                    return reorder.insertConcat(tuple(nextnodes))
+                    return reorder.insertConcat(tuple(nextnodes), nodeid=node.nodeid)
             return DFConcat(tuple(nextnodes), nodeid=node.nodeid)
 
         if isinstance(node, Repeat):
@@ -1210,7 +1210,7 @@ class BindVisitor(NodeVisitor):
                 resolvednodes.append(self.resolveBlockingAssign(n, scope))
             for r in resolvednodes:
                 if isinstance(r, DFBranch):
-                    return reorder.insertOpList(resolvednodes, tree.operator)
+                    return reorder.insertOpList(resolvednodes, tree.operator, nodeid=tree.nodeid)
             return DFOperator(tuple(resolvednodes), tree.operator, nodeid=tree.nodeid)
 
         if isinstance(tree, DFConcat):
@@ -1219,7 +1219,7 @@ class BindVisitor(NodeVisitor):
                 resolvednodes.append(self.resolveBlockingAssign(n, scope))
             for r in resolvednodes:
                 if isinstance(r, DFBranch):
-                    return reorder.insertConcat(resolvednodes)
+                    return reorder.insertConcat(resolvednodes, nodeid=tree.nodeid)
             return DFConcat(tuple(resolvednodes), nodeid=tree.nodeid)
 
         if isinstance(tree, DFPartselect):

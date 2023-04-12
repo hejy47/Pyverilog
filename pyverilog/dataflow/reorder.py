@@ -97,12 +97,12 @@ def insertUnaryOp(base, op):
     return DFOperator((base,), op, nodeid=base.nodeid)
 
 
-def insertOp(left, right, op):
+def insertOp(left, right, op, nodeid):
     if isinstance(left, DFBranch):
-        return DFBranch(left.condnode, insertOp(left.truenode, right, op), insertOp(left.falsenode, right, op), nodeid=left.nodeid)
+        return DFBranch(left.condnode, insertOp(left.truenode, right, op, nodeid=nodeid), insertOp(left.falsenode, right, op, nodeid=nodeid), nodeid=left.nodeid)
     elif isinstance(right, DFBranch):
-        return DFBranch(right.condnode, insertOp(left, right.truenode, op), insertOp(left, right.falsenode, op), nodeid=right.nodeid)
-    return DFOperator((left, right), op, nodeid=op.nodeid)
+        return DFBranch(right.condnode, insertOp(left, right.truenode, op, nodeid=nodeid), insertOp(left, right.falsenode, op, nodeid=nodeid), nodeid=right.nodeid)
+    return DFOperator((left, right), op, nodeid=nodeid)
 
 
 def insertOpList(nextnodes, op, nodeid):

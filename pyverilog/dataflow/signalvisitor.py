@@ -507,14 +507,14 @@ class SignalVisitor(NodeVisitor):
             right_df = self.makeDFTree(node.right, scope)
             if isinstance(right_df, DFBranch):
                 return reorder.insertUnaryOp(right_df, node.__class__.__name__)
-            return DFOperator((right_df,), node.__class__.__name__)
+            return DFOperator((right_df,), node.__class__.__name__, nodeid=node.nodeid)
 
         if isinstance(node, Operator):
             left_df = self.makeDFTree(node.left, scope)
             right_df = self.makeDFTree(node.right, scope)
             if isinstance(left_df, DFBranch) or isinstance(right_df, DFBranch):
-                return reorder.insertOp(left_df, right_df, node.__class__.__name__)
-            return DFOperator((left_df, right_df,), node.__class__.__name__)
+                return reorder.insertOp(left_df, right_df, node.__class__.__name__, nodeid=node.nodeid)
+            return DFOperator((left_df, right_df,), node.__class__.__name__, nodeid=node.nodeid)
 
         if isinstance(node, Partselect):
             var_df = self.makeDFTree(node.var, scope)
@@ -523,13 +523,13 @@ class SignalVisitor(NodeVisitor):
 
             if isinstance(var_df, DFBranch):
                 return reorder.insertPartselect(var_df, msb_df, lsb_df)
-            return DFPartselect(var_df, msb_df, lsb_df)
+            return DFPartselect(var_df, msb_df, lsb_df, nodeid=node.nodeid)
 
         if isinstance(node, Pointer):
             var_df = self.makeDFTree(node.var, scope)
             ptr_df = self.makeDFTree(node.ptr, scope)
 
-            return DFPointer(var_df, ptr_df)
+            return DFPointer(var_df, ptr_df, nodeid=node.nodeid)
 
         if isinstance(node, Concat):
             nextnodes = []
@@ -537,7 +537,7 @@ class SignalVisitor(NodeVisitor):
                 nextnodes.append(self.makeDFTree(n, scope))
             for n in nextnodes:
                 if isinstance(n, DFBranch):
-                    return reorder.insertConcat(tuple(nextnodes))
+                    return reorder.insertConcat(tuple(nextnodes), nodeid=node.nodeid)
             return DFConcat(tuple(nextnodes), nodeid=node.nodeid)
 
         if isinstance(node, Repeat):
