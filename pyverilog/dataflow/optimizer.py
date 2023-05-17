@@ -178,7 +178,7 @@ class VerilogOptimizer(object):
             if not isinstance(n, DFEvalValue):
                 return None
             valuelist.append(n.value)
-            if n.width > width:
+            if n.width and n.width > width:
                 width = n.width
         rslt = self._evalOperator(operator, tuple(valuelist), width)
         return DFEvalValue(rslt, width)
