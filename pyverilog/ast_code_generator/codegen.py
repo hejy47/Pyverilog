@@ -1027,6 +1027,7 @@ class ASTCodeGenerator(ConvertVisitor):
         filename = getfilename(node)
         template = self.get_template(filename)
         template_dict = {
+            'delay': '' if node.delay is None else self.visit(node.delay),
             'statement': self.visit(node.statement),
         }
         rslt = template.render(template_dict)

@@ -1324,13 +1324,16 @@ class ParallelBlock(Node):
 class SingleStatement(Node):
     attr_names = ()
 
-    def __init__(self, statement, lineno=0):
+    def __init__(self, statement, delay=None, lineno=0):
         self.lineno = lineno
         self.nodeid = None
+        self.delay = delay
         self.statement = statement
 
     def children(self):
         nodelist = []
+        if self.delay:
+            nodelist.append(self.delay)
         if self.statement:
             nodelist.append(self.statement)
         return tuple(nodelist)
