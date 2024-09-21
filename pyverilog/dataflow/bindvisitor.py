@@ -276,10 +276,10 @@ class BindVisitor(NodeVisitor):
             else:
                 senslist.append(l)
 
-        if clock_edge is not None and len(senslist) > 0:
-            raise verror.FormatError('Illegal sensitivity list')
-        if reset_edge is not None and len(senslist) > 0:
-            raise verror.FormatError('Illegal sensitivity list')
+        # if clock_edge is not None and len(senslist) > 0:
+        #     raise verror.FormatError('Illegal sensitivity list')
+        # if reset_edge is not None and len(senslist) > 0:
+        #     raise verror.FormatError('Illegal sensitivity list')
 
         return (clock, clock_name, clock_edge, clock_bit, reset, reset_name, reset_edge, reset_bit, senslist)
 
@@ -1312,7 +1312,7 @@ class BindVisitor(NodeVisitor):
     def getDsts(self, left, scope):
         if isinstance(left, Lvalue):
             return self.getDsts(left.var, scope)
-        if isinstance(left, LConcat):
+        if isinstance(left, LConcat) or isinstance(left, Concat):
             dst = []
             for n in left.list:
                 dst.extend(list(self.getDsts(n, scope)))
