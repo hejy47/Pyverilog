@@ -16,7 +16,7 @@ from pyverilog.dataflow.dataflow import *
 
 def replaceUndefined(tree, termname):
     if tree is None:
-        return DFTerminal(termname, nodeid=tree.nodeid)
+        return DFTerminal(termname)
     if isinstance(tree, DFUndefined):
         return DFTerminal(termname, nodeid=tree.nodeid)
     # if isinstance(tree, DFHighImpedance): return DFTerminal(termname)
