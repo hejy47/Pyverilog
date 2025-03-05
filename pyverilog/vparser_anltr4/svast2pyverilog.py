@@ -2,6 +2,7 @@ from antlr4 import *
 from SystemVerilogLexer import SystemVerilogLexer
 from SystemVerilogParser import SystemVerilogParser
 from SystemVerilogParserVisitor import SystemVerilogParserVisitor
+from pyverilog.utils.op2mark import operator_mark
 from pyverilog.vparser.ast import *
 
 
@@ -98,3 +99,13 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         sens = self.visitChildren(ctx.getChild(0)) if ctx.getChild(0) else None
         statements = self.visitChildren(ctx.getChild(1)) if ctx.getChild(1) else None
         return sens, statements
+
+    def get_operator(self, ctx):
+        text = ctx.getText()
+        op_cls = None
+        for k, v in operator_mark.items():
+            if text == v:
+                op_cls = eval(k)
+        if op_cls is None:
+            raise NotImplementedError(f"Unknown operator {text}")
+        return op_cls
