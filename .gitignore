@@ -3,3 +3,6 @@
 parsetab.py
 
 .antlr/
+
+wk_dir/
+.env
