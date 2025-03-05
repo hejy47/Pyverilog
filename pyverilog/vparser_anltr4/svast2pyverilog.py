@@ -107,6 +107,23 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         statements = self.visit(ctx.getChild(1)) if ctx.getChild(1) else None
         return sens, statements
 
+    def visitProcedural_timing_control(self, ctx):
+        lineno = ctx.start.line
+        sens_list = self.visit(ctx.getChild(0).getChild(2))
+        ast = SensList(sens_list, lineno=lineno)
+        return ast
+
+    def visitEvent_expression(self, ctx):
+        lineno = ctx.start.line
+        if ctx.getChildCount() == 2:
+            sens = Sens(type=ctx.getChild(0).getText(), sig=self.visit(ctx.getChild(1)), lineno=lineno)
+            return [sens]
+        left = self.visit(ctx.getChild(0))
+        right = self.visit(ctx.getChild(2))
+        assert isinstance(left, list)
+        assert isinstance(right, list)
+        return left + right
+
     def visitExpression(self, ctx):
         lineno = ctx.start.line
         if ctx.getChildCount() == 1:
