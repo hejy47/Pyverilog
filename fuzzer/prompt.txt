@@ -1,7 +1,7 @@
 Please generate syntax correct {lang} code as possible as to exercise a AST Parser with {lang} language features, now we only consider design code (i.e., DUT), not include testbench code;
 Here is an example of {lang} code:
 
-```systemverilog
+```{lang}
 module RefModule (
     input logic clk,
     input logic rst_n,
@@ -34,4 +34,4 @@ module RefModule (
 endmodule
 ```
 
-Please wrap the Verilog code with ```verilog ... ```
+Please wrap the Verilog code with ```{lang} ... ```

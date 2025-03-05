@@ -139,8 +139,14 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
             op_cls = self.get_operator(ctx.getChild(1))
             right = self.visit(ctx.getChild(2))
             return op_cls(left, right, lineno=lineno)
+        elif ctx.getChildCount() == 5:
+            # trinary operator
+            cond = self.visit(ctx.getChild(0))
+            true_statement = self.visit(ctx.getChild(2))
+            false_statement = self.visit(ctx.getChild(4))
+            return Cond(cond, true_statement, false_statement, lineno=lineno)
         else:
-            raise NotImplementedError(f"Unknown expression type with {ctx.getChildCount()}")
+            raise NotImplementedError(f"Unknown expression type with childCount: {ctx.getChildCount()}")
 
     def get_operator(self, ctx):
         text = ctx.getText()
