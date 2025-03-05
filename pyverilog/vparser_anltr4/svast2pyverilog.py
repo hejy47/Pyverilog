@@ -17,6 +17,9 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
                 child = node.getChild(i)
                 result = child.accept(self)
                 results.append(result)
+        # avoid meaningless wrap.
+        if len(results) == 1:
+            return results[0]
         return results
 
     def visitSource_text(self, ctx):
@@ -51,6 +54,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     
     def visitPort_decl(self, ctx):
         lineno = ctx.start.line
+        # TODO: ctx.getText() is not port name
         port = Port(ctx.getText(), width=None, dimensions=None, type=None, lineno=lineno)
         return port
     
