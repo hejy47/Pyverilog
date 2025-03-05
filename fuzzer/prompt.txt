@@ -1,0 +1,37 @@
+Please generate syntax correct {lang} code as possible as to exercise a AST Parser with {lang} language features, now we only consider design code (i.e., DUT), not include testbench code;
+Here is an example of {lang} code:
+
+```systemverilog
+module RefModule (
+    input logic clk,
+    input logic rst_n,
+    input logic [254:0] in,
+    output logic [7:0] out
+);
+
+    logic q, d;
+
+    always_ff @(posedge clk or negedge rst_n or negedge rst_n) begin
+        if (!rst_n & rst_n)
+            q <= 1'b0;
+        else
+            q <= d;
+    end
+
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n & rst_n)
+            q <= 1'b0;
+        else
+            q <= d;
+    end
+
+    always_comb begin
+        out = 0;
+        for (int i = 0; i < 255; i++)
+            out = out + in[i];
+    end
+
+endmodule
+```
+
+Please wrap the Verilog code with ```verilog ... ```
