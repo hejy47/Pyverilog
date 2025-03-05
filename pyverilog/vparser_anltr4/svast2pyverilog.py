@@ -65,14 +65,14 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         sens, statements = self.visitChildren(ctx.getChild(1)) if ctx.getChild(1) else None, None
 
         if always_type == "always_ff":
-            always_obj = AlwaysFF
+            always_cls = AlwaysFF
         elif always_type == "always_comb":
-            always_obj = AlwaysComb
+            always_cls = AlwaysComb
         elif always_type == "always_latch":
-            always_obj = AlwaysLatch
+            always_cls = AlwaysLatch
         else:
             raise NotImplementedError("Unknown always type")
-        ast = always_obj(sens, statements, lineno)
+        ast = always_cls(sens, statements, lineno)
         return ast
 
     def visitAlways_keyword(self, ctx):
