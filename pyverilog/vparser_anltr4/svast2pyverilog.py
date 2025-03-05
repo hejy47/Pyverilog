@@ -71,8 +71,9 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
                 sens, statements = sub_res
             else:
                 sens, statements = None, sub_res
-
-        if always_type == "always_ff":
+        if always_type == "always":
+            always_cls = Always
+        elif always_type == "always_ff":
             always_cls = AlwaysFF
         elif always_type == "always_comb":
             always_cls = AlwaysComb
