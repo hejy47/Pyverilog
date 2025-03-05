@@ -1,7 +1,7 @@
 from antlr4 import *
-from SystemVerilogLexer import SystemVerilogLexer
-from SystemVerilogParser import SystemVerilogParser
-from SystemVerilogParserVisitor import SystemVerilogParserVisitor
+from .SystemVerilogLexer import SystemVerilogLexer
+from .SystemVerilogParser import SystemVerilogParser
+from .SystemVerilogParserVisitor import SystemVerilogParserVisitor
 from pyverilog.utils.op2mark import operator_mark
 from pyverilog.vparser.ast import *
 
