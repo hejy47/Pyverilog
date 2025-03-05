@@ -36,7 +36,7 @@ def main(args):
         model=llm,
         lang="SystemVerilog",
         wk_dir=args.wk_dir,
-        iter_num=args.iter_num,
+        iter_num=int(args.iter_num),
         prompt=args.prompt,
     )
 
