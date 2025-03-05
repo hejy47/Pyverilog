@@ -63,7 +63,14 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     def visitAlways_construct(self, ctx):
         lineno = ctx.start.line
         always_type = self.visitAlways_keyword(ctx.getChild(0)) if ctx.getChild(0) else None
-        sens, statements = self.visitChildren(ctx.getChild(1)) if ctx.getChild(1) else None, None
+        if ctx.getChild(1) is None:
+            sens, statements = None, None
+        else:
+            sub_res = self.visit(ctx.getChild(1))
+            if isinstance(sub_res, tuple):
+                sens, statements = sub_res
+            else:
+                sens, statements = None, sub_res
 
         if always_type == "always_ff":
             always_cls = AlwaysFF
@@ -100,6 +107,24 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         statements = self.visitChildren(ctx.getChild(1)) if ctx.getChild(1) else None
         return sens, statements
 
+    def visitExpression(self, ctx):
+        lineno = ctx.start.line
+        if ctx.getChildCount() == 1:
+            return self.visitChildren(ctx)
+        elif ctx.getChildCount() == 2:
+            # unary operator
+            op_cls = self.get_operator(ctx.getChild(0))
+            right = self.visit(ctx.getChild(1))
+            return op_cls(right, lineno=lineno)
+        elif ctx.getChildCount() == 3:
+            # binary operator
+            left = self.visit(ctx.getChild(0))
+            op_cls = self.get_operator(ctx.getChild(1))
+            right = self.visit(ctx.getChild(2))
+            return op_cls(left, right, lineno=lineno)
+        else:
+            raise NotImplementedError(f"Unknown expression type with {ctx.getChildCount()}")
+
     def get_operator(self, ctx):
         text = ctx.getText()
         op_cls = None
@@ -109,3 +134,35 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         if op_cls is None:
             raise NotImplementedError(f"Unknown operator {text}")
         return op_cls
+
+    def visitUnary_operator(self, ctx):
+        op_cls = self.get_operator(ctx)
+        return op_cls
+
+    def visitSimple_identifier(self, ctx):
+        lineno = ctx.start.line
+        identifier = Identifier(ctx.getText(), scope=None, lineno=lineno)
+        return identifier
+
+    def visitIntegral_number(self, ctx):
+        lineno = ctx.start.line
+        text = ctx.getText()
+        ast = IntConst(text, lineno=lineno)
+        return ast
+
+    def visitNonblocking_assignment(self, ctx):
+        lineno = ctx.start.line
+        lvalue = self.visit(ctx.getChild(0))
+        rvalue = self.visit(ctx.getChild(2))
+        ast = NonblockingSubstitution(lvalue, rvalue, ldelay=None, rdelay=None, lineno=lineno)
+        return ast
+
+    def visitBlocking_statement(self, ctx):
+        return self.visitOperator_assignment(ctx)
+
+    def visitOperator_assignment(self, ctx):
+        lineno = ctx.start.line
+        lvalue = self.visit(ctx.getChild(0))
+        rvalue = self.visit(ctx.getChild(2))
+        ast = BlockingSubstitution(lvalue, rvalue, ldelay=None, rdelay=None, lineno=lineno)
+        return ast
