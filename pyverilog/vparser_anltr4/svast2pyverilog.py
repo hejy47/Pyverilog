@@ -84,3 +84,17 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         statements = self.visitChildren(ctx)
         ast = Block(statements, scope=None, lineno=lineno)
         return ast
+
+    def visitConditional_statement(self, ctx):
+        lineno = ctx.start.line
+        # TODO: better?
+        cond = self.visitChildren(ctx.children[2]) if ctx.getChild(2) else None
+        true_statement = self.visitChildren(ctx.children[4]) if ctx.getChild(4) else None
+        false_statement = self.visitChildren(ctx.children[6]) if ctx.getChild(6) else None
+        ast = IfStatement(cond, true_statement, false_statement, lineno=lineno)
+        return ast
+
+    def visitProcedural_timing_control_statement(self, ctx):
+        sens = self.visitChildren(ctx.getChild(0)) if ctx.getChild(0) else None
+        statements = self.visitChildren(ctx.getChild(1)) if ctx.getChild(1) else None
+        return sens, statements
