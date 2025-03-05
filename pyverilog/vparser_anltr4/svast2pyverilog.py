@@ -8,10 +8,15 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     def visitChildren(self, node):
         results = []
         if node == None: return results
-        for i in range(node.getChildCount()):
-            child = node.getChild(i)
-            result = child.accept(self)
-            results.append(result)
+        if isinstance(node, list):
+            for child in node:
+                result = child.accept(self)
+                results.append(result)
+        else:
+            for i in range(node.getChildCount()):
+                child = node.getChild(i)
+                result = child.accept(self)
+                results.append(result)
         return results
 
     def visitSource_text(self, ctx):
@@ -29,6 +34,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     def visitModule_declaration(self, ctx):
         lineno = ctx.start.line
         name, paramlist, portlist = self.visitModule_header(ctx.module_header())
+        # bug:  ctx.module_item() returns a list
         items = self.visitChildren(ctx.module_item())
         ast = ModuleDef(name, paramlist, portlist, items, lineno)
         return ast
