@@ -13,8 +13,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def extract_verilog_code(text) -> Optional[str]:
-    pattern = r'```verilog(.*?)```'
+def extract_code(text, lang) -> Optional[str]:
+    pattern = fr'```{lang}(.*?)```'
     matches = re.findall(pattern, text, re.DOTALL)
     return matches[0].strip() if matches else None
 
@@ -52,13 +52,14 @@ class MultiLLM:
         )
         return response.message.content.strip()
 
-    def generate_verilog_code(self, prompt) -> Optional[str]:
+    def generate_code(self, prompt, lang) -> Optional[str]:
+        prompt = prompt.format(lang=lang)
         response = self.query(prompt)
 
-        verilog_code = extract_verilog_code(response)
+        code = extract_code(response, lang)
 
-        if verilog_code:
-            return verilog_code
+        if code:
+            return code
         else:
             return None
 
@@ -74,14 +75,14 @@ class GPTFuzzer(AstFuzzer):
         AstFuzzer.__init__(self, wk_dir, iter_num)
         self.model = model
         self.lang = lang
-        self.prompt = Path(prompt).read_text().format(lang=self.lang)
+        self.prompt = Path(prompt).read_text()
 
     def gen_code(self) -> Path:
         retry = 0
         while True:
             if retry > 5:
                 raise RuntimeError(f"Too many retries for code generation, try again later")
-            res = self.model.generate_verilog_code(self.prompt)
+            res = self.model.generate_code(self.prompt, self.lang)
             if res is None:
                 retry += 1
                 continue

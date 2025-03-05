@@ -40,7 +40,6 @@ class AstFuzzer(ABC):
                 reports.append(FuzzingReport(src_code=str(code), error_report=error_report))
                 rep_str = json.dumps([i.to_json() for i in reports], indent=4)
                 (self.wk_dir / 'reports.json').write_text(rep_str)
-            print(f"[SUCCESS@{self.iter_num}] fuzzing {code}")
             if self.iter_num == -1:
                 continue
             self.iter_num -= 1
