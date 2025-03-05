@@ -131,7 +131,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
             return self.visitChildren(ctx)
         elif ctx.getChildCount() == 2:
             # unary operator
-            op_cls = self.get_operator(ctx.getChild(0))
+            op_cls = self.get_operator(ctx.getChild(0), unary=True)
             right = self.visit(ctx.getChild(1))
             return op_cls(right, lineno=lineno)
         elif ctx.getChildCount() == 3:
@@ -149,12 +149,15 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         else:
             raise NotImplementedError(f"Unknown expression type with childCount: {ctx.getChildCount()}")
 
-    def get_operator(self, ctx):
+    def get_operator(self, ctx, unary=False):
         text = ctx.getText()
         op_cls = None
         for k, v in operator_mark.items():
             if text == v:
-                op_cls = eval(k)
+                if unary and 'U' in k:
+                    op_cls = eval(k)
+                if not unary and 'U' not in k:
+                    op_cls = eval(k)
         if op_cls is None:
             raise NotImplementedError(f"Unknown operator {text}")
         return op_cls
