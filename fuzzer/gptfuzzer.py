@@ -82,7 +82,11 @@ class GPTFuzzer(AstFuzzer):
         while True:
             if retry > 5:
                 raise RuntimeError(f"Too many retries for code generation, try again later")
-            res = self.model.generate_code(self.prompt, self.lang)
+            res = None
+            try:
+                res = self.model.generate_code(self.prompt, self.lang)
+            except Exception as e:
+                print(f"Exception while generating code: {e}")
             if res is None:
                 retry += 1
                 continue
