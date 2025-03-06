@@ -71,8 +71,9 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
                 sens, statements = sub_res
             else:
                 sens, statements = None, sub_res
-
-        if always_type == "always_ff":
+        if always_type == "always":
+            always_cls = Always
+        elif always_type == "always_ff":
             always_cls = AlwaysFF
         elif always_type == "always_comb":
             always_cls = AlwaysComb
@@ -107,10 +108,21 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         statements = self.visit(ctx.getChild(1)) if ctx.getChild(1) else None
         return sens, statements
 
-    def visitProcedural_timing_control(self, ctx):
+    def visitEvent_control(self, ctx):
         lineno = ctx.start.line
-        sens_list = self.visit(ctx.getChild(0).getChild(2))
+        sens_list = self.visit(ctx.getChild(2))
         ast = SensList(sens_list, lineno=lineno)
+        return ast
+
+    def visitUnsigned_number(self, ctx):
+        lineno = ctx.start.line
+        ast = IntConst(ctx.getText(), lineno=lineno)
+        return ast
+
+    def visitDelay_control(self, ctx):
+        lineno = ctx.start.line
+        delay = self.visit(ctx.getChild(1))
+        ast = DelayStatement(delay, lineno=lineno)
         return ast
 
     def visitEvent_expression(self, ctx):
@@ -130,7 +142,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
             return self.visitChildren(ctx)
         elif ctx.getChildCount() == 2:
             # unary operator
-            op_cls = self.get_operator(ctx.getChild(0))
+            op_cls = self.get_operator(ctx.getChild(0), unary=True)
             right = self.visit(ctx.getChild(1))
             return op_cls(right, lineno=lineno)
         elif ctx.getChildCount() == 3:
@@ -148,12 +160,15 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         else:
             raise NotImplementedError(f"Unknown expression type with childCount: {ctx.getChildCount()}")
 
-    def get_operator(self, ctx):
+    def get_operator(self, ctx, unary=False):
         text = ctx.getText()
         op_cls = None
         for k, v in operator_mark.items():
             if text == v:
-                op_cls = eval(k)
+                if unary and 'U' in k:
+                    op_cls = eval(k)
+                if not unary and 'U' not in k:
+                    op_cls = eval(k)
         if op_cls is None:
             raise NotImplementedError(f"Unknown operator {text}")
         return op_cls
