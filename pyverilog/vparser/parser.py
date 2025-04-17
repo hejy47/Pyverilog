@@ -24,6 +24,7 @@ from ply.yacc import yacc
 from pyverilog.vparser.preprocessor import VerilogPreprocessor
 from pyverilog.vparser.lexer import VerilogLexer
 from pyverilog.vparser.ast import *
+from pyverilog.vparser_anltr4.parser import parse_verilog_text
 
 
 class VerilogParser(object):
@@ -2339,7 +2340,7 @@ class VerilogCodeParser(object):
         self.preprocessor = VerilogPreprocessor(filelist, preprocess_output,
                                                 preprocess_include,
                                                 preprocess_define)
-        self.parser = VerilogParser(outputdir=outputdir, debug=debug)
+        # self.parser = VerilogParser(outputdir=outputdir, debug=debug)
         self.numbering = NodeNumbering()
 
     def preprocess(self):
@@ -2348,11 +2349,17 @@ class VerilogCodeParser(object):
         os.remove(self.preprocess_output)
         return text
 
+    # def parse(self, preprocess_output='preprocess.output', debug=0):
+    #     text = self.preprocess()
+    #     ast = self.parser.parse(text, debug=debug)
+    #     self.numbering.visit(ast)
+    #     self.directives = self.parser.get_directives()
+    #     return ast
+
     def parse(self, preprocess_output='preprocess.output', debug=0):
         text = self.preprocess()
-        ast = self.parser.parse(text, debug=debug)
+        ast = parse_verilog_text(text)
         self.numbering.visit(ast)
-        self.directives = self.parser.get_directives()
         return ast
 
     def get_directives(self):

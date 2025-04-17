@@ -91,7 +91,9 @@ class Source(Node):
 
     def children(self):
         nodelist = []
-        if self.description:
+        if isinstance(self.description, list):
+            nodelist.extend(self.description)
+        elif self.description:
             nodelist.append(self.description)
         return tuple(nodelist)
 
