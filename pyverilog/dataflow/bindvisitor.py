@@ -82,6 +82,9 @@ class BindVisitor(NodeVisitor):
 
     def visit_Integer(self, node):
         self.addTerm(node)
+    
+    def visit_Logic(self, node):
+        self.addTerm(node)
 
     def visit_Parameter(self, node):
         self.addTerm(node)
@@ -230,6 +233,12 @@ class BindVisitor(NodeVisitor):
 
         self.generic_visit(node)
         self.frames.setCurrent(current)
+    
+    def visit_AlwaysComb(self, node):
+        self.visit_Always(node)
+    
+    def visit_AlwaysFF(self, node):
+        self.visit_Always(node)
 
     def _get_signal_name(self, n):
         if isinstance(n, Identifier):
@@ -435,14 +444,20 @@ class BindVisitor(NodeVisitor):
             return
         if self.frames.isTaskdef() and not self.frames.isTaskcall():
             return
-
+        
+        pre_node = node.pre
+        if isinstance(pre_node, Decl):
+            # visit the declaration
+            self.visit(pre_node.children()[0])
+            # update the pre_node
+            pre_node = pre_node.children()[1]
         # pre-statement
         current = self.frames.getCurrent()
-        pre_right = self.getTree(node.pre.right, current)
+        pre_right = self.getTree(pre_node.right, current)
         pre_right_value = self.optimize(pre_right)
         loop = pre_right_value.value
         self.frames.setForPre()
-        self.visit(node.pre)
+        self.visit(pre_node)
         self.frames.unsetForPre()
         label = self.labels.get(self.frames.getLabelKey('for'))
         #loop = 0
@@ -1145,6 +1160,11 @@ class BindVisitor(NodeVisitor):
                 return self.makeDFTree(node.args[0], scope)
             if node.syscall == 'signed':
                 return self.makeDFTree(node.args[0], scope)
+            if node.syscall == 'bits':
+                name, msb, lsb, ptr = self.getDst(node.args[0], scope)
+                msb, lsb = self.getTermWidth(name)
+                bit_size = int(msb.value) - int(lsb.value) + 1
+                return DFIntConst(str(bit_size), nodeid=node.nodeid)
             return DFIntConst('0', nodeid=None)
 
         raise verror.FormatError("unsupported AST node type: %s %s" %

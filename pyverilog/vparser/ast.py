@@ -343,6 +343,8 @@ class Real(Variable):
 class Genvar(Variable):
     pass
 
+class Logic(Variable):
+    pass
 
 class Ioport(Node):
     attr_names = ()

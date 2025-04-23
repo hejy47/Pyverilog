@@ -165,6 +165,12 @@ class SignalVisitor(NodeVisitor):
                                        always=True, framenodeid=node.nodeid)
         self.generic_visit(node)
         self.frames.setCurrent(current)
+    
+    def visit_AlwaysComb(self, node):
+        self.visit_Always(node)
+    
+    def visit_AlwaysFF(self, node):
+        self.visit_Always(node)
 
     def visit_IfStatement(self, node):
 
@@ -269,13 +275,19 @@ class SignalVisitor(NodeVisitor):
         self._case(comp, caselist[1:])
 
     def visit_ForStatement(self, node):
+        pre_node = node.pre
+        if isinstance(pre_node, Decl):
+            # visit the declaration
+            self.visit(pre_node.children()[0])
+            # update the pre_node
+            pre_node = pre_node.children()[1]
         # pre-statement
         current = self.frames.getCurrent()
-        pre_right = self.getTree(node.pre.right, current)
+        pre_right = self.getTree(pre_node.right, current)
         pre_right_value = self.optimize(pre_right)
         loop = pre_right_value.value
         self.frames.setForPre()
-        self.visit(node.pre)
+        self.visit(pre_node)
         self.frames.unsetForPre()
         label = self.labels.get(self.frames.getLabelKey('for'))
         #loop = 0
@@ -553,6 +565,14 @@ class SignalVisitor(NodeVisitor):
                 return self.makeDFTree(node.args[0])
             if node.syscall == 'signed':
                 return self.makeDFTree(node.args[0])
+            if node.syscall == 'bits':
+                name, definition = self.searchConstantDefinition(scope, node.args[0].name)
+                if len(definition) > 1:
+                    definition = definition[0]
+                width = definition.width
+                msb, lsb = width.msb, width.lsb
+                bit_size = int(msb.value) - int(lsb.value) + 1
+                return DFIntConst(str(bit_size), nodeid=node.nodeid)
             return DFIntConst('0')
 
         raise verror.FormatError("unsupported AST node type: %s %s" %

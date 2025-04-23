@@ -2381,5 +2381,4 @@ def parse(
         debug=debug
     )
     ast = codeparser.parse()
-    directives = codeparser.get_directives()
-    return ast, directives
+    return ast
