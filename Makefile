@@ -10,7 +10,7 @@ test:
 
 .PHONY: install
 install:
-	$(PYTHON) setup.py install --prefix=$(HOME)/.local
+	$(PYTHON) setup.py install
 
 .PHONY: clean
 clean:

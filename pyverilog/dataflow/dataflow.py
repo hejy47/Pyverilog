@@ -148,6 +148,7 @@ class DFIntConst(DFConstant):
     def __init__(self, value, nodeid=None):
         self.value = value
         self.nodeid = nodeid
+        self._width = None
 
     def tostr(self):
         ret = '(IntConst ' + str(self.value) + '[{}])'.format(self.nodeid)
@@ -171,6 +172,8 @@ class DFIntConst(DFConstant):
         match = re.search(r'[Bb](.+)', targ)
         if match is not None:
             return int(match.group(1), 2)
+        if targ.startswith("'") and self._width is not None:
+            return int(targ[1] * self._width, 2)
         return int(targ, 10)
 
     def width(self):
@@ -187,6 +190,8 @@ class DFIntConst(DFConstant):
         match = re.search(r'(.+)\'[Bb].+', targ)
         if match is not None:
             return int(match.group(1), 10)
+        if self._width is not None:
+            return self._width
         return 32
 
 

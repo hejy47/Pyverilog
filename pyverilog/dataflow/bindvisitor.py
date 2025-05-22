@@ -955,11 +955,26 @@ class BindVisitor(NodeVisitor):
     def addDataflow(self, dst, right, lscope, rscope, alwaysinfo=None, bindtype=None):
         condlist, flowlist, framenodeidlist = self.getCondflow(lscope)
         raw_tree = self.getTree(right, rscope)
+
+        # process Unbased literal (e.g., '1)
+        if len(dst) == 1 and isinstance(raw_tree, DFIntConst):
+            dst_name = dst[0][0]
+            msb, lsb = self.getTermWidth(dst_name)
+            if isinstance(msb, DFEvalValue) and isinstance(lsb, DFEvalValue):
+                raw_tree._width = msb.eval() - lsb.eval() + 1
+
         self.setDataflow(dst, raw_tree, condlist, flowlist, framenodeidlist, alwaysinfo, bindtype)
 
     def addDataflow_blocking(self, dst, right, lscope, rscope, alwaysinfo):
         condlist, flowlist, framenodeidlist = self.getCondflow(lscope)
         raw_tree = self.getTree(right, rscope)
+
+        # process Unbased literal (e.g., '1)
+        if len(dst) == 1 and isinstance(raw_tree, DFIntConst):
+            dst_name = dst[0][0]
+            msb, lsb = self.getTermWidth(dst_name)
+            if isinstance(msb, DFEvalValue) and isinstance(lsb, DFEvalValue):
+                raw_tree._width = msb.eval() - lsb.eval() + 1
 
         self.setDataflow_rename(dst, raw_tree, condlist, flowlist, framenodeidlist, lscope, alwaysinfo)
 
