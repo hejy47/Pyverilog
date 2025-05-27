@@ -346,6 +346,13 @@ class Genvar(Variable):
 class Logic(Variable):
     pass
 
+class NewType(Variable):
+    attr_names = ('type_name', 'name')
+
+    def __init__(self, type_name, name, width=None, signed=False, dimensions=None, value=None, lineno=0):
+        super(NewType, self).__init__(name, width, signed, dimensions, value, lineno)
+        self.type_name = type_name
+
 class Ioport(Node):
     attr_names = ()
 
@@ -392,6 +399,62 @@ class Localparam(Parameter):
 class Supply(Parameter):
     pass
 
+class TypedefAlias(Node):
+    attr_names = ('base_type',)
+    def __init__(self, base_type, width=None, lineno=0):
+        self.lineno = lineno
+        self.nodeid = None
+        self.base_type = base_type
+        self.width = width
+    
+    def children(self):
+        nodelist = []
+        if self.width:
+            nodelist.append(self.width)
+        return tuple(nodelist)
+
+class TypedefEnum(Node):
+    attr_names = ('base_type',)
+    def __init__(self, base_type, members, width=None, lineno=0):
+        self.lineno = lineno
+        self.nodeid = None
+        self.base_type = base_type
+        self.members = members
+        self.width = width
+
+    def children(self):
+        nodelist = []
+        if self.width:
+            nodelist.append(self.width)
+        if self.members:
+            nodelist.extend(self.members)
+        return tuple(nodelist)
+
+class Typedef(Node):
+    attr_names = ('name',)
+
+    def __init__(self, name, typedefbase, lineno=0):
+        self.lineno = lineno
+        self.nodeid = None
+        self.name = name
+        self.typedefbase = typedefbase
+    
+    def children(self):
+        nodelist = []
+        if self.typedefbase:
+            nodelist.append(self.typedefbase)
+        return tuple(nodelist)
+
+class Cast(Node):
+    attr_names = ('target_type',)
+    def __init__(self, target_type, expr, lineno=0):
+        self.lineno = lineno
+        self.nodeid = None
+        self.target_type = target_type
+        self.expr = expr
+
+    def children(self):
+        return (self.expr,)
 
 class Decl(Node):
     attr_names = ()

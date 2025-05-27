@@ -61,6 +61,16 @@ class SignalVisitor(NodeVisitor):
 
     def visit_Integer(self, node):
         self.frames.addSignal(node)
+    
+    def visit_Logic(self, node):
+        self.frames.addSignal(node)
+    
+    def visit_TypedefEnum(self, node):
+        for member in node.members:
+            self.frames.addSignal(member)
+    
+    def visit_NewType(self, node):
+        self.frames.addSignal(node)
 
     def visit_Parameter(self, node):
         self.frames.addConst(node)

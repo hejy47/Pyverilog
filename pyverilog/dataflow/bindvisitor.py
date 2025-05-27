@@ -85,6 +85,13 @@ class BindVisitor(NodeVisitor):
     
     def visit_Logic(self, node):
         self.addTerm(node)
+    
+    def visit_TypeDefEnum(self, node):
+        for member in node.members:
+            self.addTerm(member)
+    
+    def visit_NewType(self, node):
+        self.addTerm(node)
 
     def visit_Parameter(self, node):
         self.addTerm(node)
@@ -1181,6 +1188,9 @@ class BindVisitor(NodeVisitor):
                 bit_size = int(msb.value) - int(lsb.value) + 1
                 return DFIntConst(str(bit_size), nodeid=node.nodeid)
             return DFIntConst('0', nodeid=None)
+        
+        if isinstance(node, Cast):
+            return self.makeDFTree(node.expr, scope)
 
         raise verror.FormatError("unsupported AST node type: %s %s" %
                                  (str(type(node)), str(node)))

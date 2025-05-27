@@ -222,12 +222,38 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
             output_decls.append(output_decl)
         return output_decls
     
+    def visitInterface_port_declaration(self, ctx):
+        lineno = ctx.start.line
+        identifier = ctx.interface_identifier().getText()
+        interfaces_list = self.visitChildren(ctx.list_of_interface_identifiers())
+        if not isinstance(interfaces_list, list):
+            interfaces_list = [interfaces_list]
+        interfaces = []
+        for _interface in interfaces_list:
+            interface = NewType(identifier, _interface.name, lineno=_interface.lineno)
+            interfaces.append(interface)
+        return interfaces
+    
     def visitImplicit_data_type(self, ctx):
         lineno = ctx.start.line
         data_width = self.visitChildren(ctx.packed_dimension()) if ctx.packed_dimension() else None
         return lineno, None, data_width
     
     def visitData_type(self, ctx):
+        lineno = ctx.start.line
+        data_type = None
+        if ctx.integer_vector_type():
+            data_type = ctx.integer_vector_type().getText()
+        elif ctx.integer_atom_type():
+            data_type = ctx.integer_atom_type().getText()
+        if ctx.enum_base_type():
+            enum_base_lineno, enum_base, enum_base_width = self.visit(ctx.enum_base_type())
+            enum_identifiers = self.visitChildren(ctx.enum_name_declaration())
+            data_type = TypedefEnum(enum_base, enum_identifiers, width=enum_base_width, lineno=enum_base_lineno)
+        data_width = self.visitChildren(ctx.packed_dimension()) if ctx.packed_dimension() else None
+        return lineno, data_type, data_width
+    
+    def visitEnum_base_type(self, ctx):
         lineno = ctx.start.line
         data_type = None
         if ctx.integer_vector_type():
@@ -302,9 +328,11 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         return identifier, dimensions, value, lineno
     
     def visitType_declaration(self, ctx):
-        data_type = self.visit(ctx.data_type())
+        lineno = ctx.start.line
+        _, data_type, _ = self.visit(ctx.data_type())
         type_identifier = self.visitChildren(ctx.type_identifier())
-        return super().visitType_declaration(ctx)
+        type_def = Typedef(type_identifier, data_type, lineno=lineno)
+        return type_def
     
     def visitNet_declaration(self, ctx):
         lineno = ctx.start.line
@@ -775,6 +803,12 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
             if not isinstance(func_call_args, list):
                 func_call_args = [func_call_args]
             primary = FunctionCall(func_call_id, func_call_args, lineno=lineno)
+        elif hasattr(ctx, 'primary') and ctx.primary() and hasattr(ctx, 'expression') and ctx.expression():
+            # Cast
+            cast_type = self.visit(ctx.primary())
+            cast_expr = self.visit(ctx.expression())
+            cast = Cast(cast_type, cast_expr, lineno=lineno)
+            primary = cast
         else:
             primary = self.visitChildren(ctx)
             assert not isinstance(primary, list)
