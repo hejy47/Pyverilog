@@ -53,8 +53,8 @@ class Node(object):
         if type(self) != type(other):
             return False
         
-        if self.nodeid != other.nodeid:
-            return False
+        # if self.nodeid != other.nodeid:
+        #     return False
 
         self_attrs = tuple([getattr(self, a) for a in self.attr_names])
         other_attrs = tuple([getattr(other, a) for a in other.attr_names])
@@ -91,9 +91,7 @@ class Source(Node):
 
     def children(self):
         nodelist = []
-        if isinstance(self.description, list):
-            nodelist.extend(self.description)
-        elif self.description:
+        if self.description:
             nodelist.append(self.description)
         return tuple(nodelist)
 

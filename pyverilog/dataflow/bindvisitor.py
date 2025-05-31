@@ -82,6 +82,9 @@ class BindVisitor(NodeVisitor):
 
     def visit_Integer(self, node):
         self.addTerm(node)
+
+    def visit_Genvar(self, node):
+        self.addTerm(node)
     
     def visit_Logic(self, node):
         self.addTerm(node)
@@ -967,7 +970,7 @@ class BindVisitor(NodeVisitor):
         if len(dst) == 1 and isinstance(raw_tree, DFIntConst):
             dst_name = dst[0][0]
             msb, lsb = self.getTermWidth(dst_name)
-            if isinstance(msb, DFEvalValue) and isinstance(lsb, DFEvalValue):
+            if (isinstance(msb, DFEvalValue) or isinstance(msb, DFConstant)) and (isinstance(lsb, DFEvalValue) or isinstance(lsb, DFConstant)):
                 raw_tree._width = msb.eval() - lsb.eval() + 1
 
         self.setDataflow(dst, raw_tree, condlist, flowlist, framenodeidlist, alwaysinfo, bindtype)
@@ -980,7 +983,7 @@ class BindVisitor(NodeVisitor):
         if len(dst) == 1 and isinstance(raw_tree, DFIntConst):
             dst_name = dst[0][0]
             msb, lsb = self.getTermWidth(dst_name)
-            if isinstance(msb, DFEvalValue) and isinstance(lsb, DFEvalValue):
+            if (isinstance(msb, DFEvalValue) or isinstance(msb, DFConstant)) and (isinstance(lsb, DFEvalValue) or isinstance(lsb, DFConstant)):
                 raw_tree._width = msb.eval() - lsb.eval() + 1
 
         self.setDataflow_rename(dst, raw_tree, condlist, flowlist, framenodeidlist, lscope, alwaysinfo)

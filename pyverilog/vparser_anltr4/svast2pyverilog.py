@@ -27,8 +27,12 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
 
     def visitSource_text(self, ctx):
         children = self.visitChildren(ctx)
+        first_child = children[0]
+        for child in children[1:]:
+            if isinstance(child, Description):
+                first_child.definitions.extend(child.definitions)
         lineno = ctx.start.line
-        ast = Source("", children, lineno)
+        ast = Source("", first_child, lineno)
         return ast
 
     def visitDescription(self, ctx):
@@ -65,6 +69,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     def visitModule_program_interface_instantiation(self, ctx):
         lineno = ctx.start.line
         module_name = self.visit(ctx.instance_identifier())
+        module_name = module_name.name if isinstance(module_name, Identifier) else module_name
         params = self.visit(ctx.parameter_value_assignment()) if ctx.parameter_value_assignment() else []
         if not isinstance(params, list):
             params = [params]
@@ -80,6 +85,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     def visitGate_instantiation(self, ctx):
         lineno = ctx.start.line
         module_name = self.visit(ctx.n_input_gatetype())
+        module_name = module_name.name if isinstance(module_name, Identifier) else module_name
         instances = self.visitChildren(ctx.n_input_gate_instance())
         if not isinstance(instances, list):
             instances = [instances]
@@ -96,7 +102,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         instance_info = self.visit(ctx.name_of_instance()) if ctx.name_of_instance() else None
         instance_id, instance_width = None, None
         if isinstance(instance_info, list):
-            instance_id = instance_info[0]
+            instance_id = instance_info[0].name
             instance_width = instance_info[1]
         output = self.visitChildren(ctx.output_terminal())
         inputs = self.visitChildren(ctx.input_terminal())
@@ -107,6 +113,12 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
             ports.append(PortArg(None, _input, lineno=_input.lineno))
         instance = Instance(module=None, name=instance_id, portlist=ports, parameterlist=[], array=instance_width, lineno=lineno)
         return instance
+    
+    def visitOrdered_parameter_assignment(self, ctx):
+        lineno = ctx.start.line
+        param_value = self.visit(ctx.param_expression())
+        param = ParamArg(None, param_value, lineno=lineno)
+        return param
 
     def visitNamed_parameter_assignment(self, ctx):
         lineno = ctx.start.line
@@ -133,10 +145,10 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         instance_info = self.visit(ctx.name_of_instance()) if ctx.name_of_instance() else None
         instance_id, instance_width = None, None
         if isinstance(instance_info, list):
-            instance_id = instance_info[0]
+            instance_id = instance_info[0].name
             instance_width = instance_info[1]
         else:
-            instance_id = instance_info
+            instance_id = instance_info.name
         ports = self.visitChildren(ctx.list_of_port_connections())
         instance = Instance(module=None, name=instance_id, portlist=ports, parameterlist=[], array=instance_width, lineno=lineno)
         return instance
@@ -203,22 +215,32 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         return port_decl
     
     def visitInput_declaration(self, ctx):
+        data_type_lineno, data_type, port_width = None, None, None
+        if ctx.data_type() is not None:
+            data_type_lineno, data_type, port_width = self.visit(ctx.data_type())
+        elif ctx.implicit_data_type() is not None:
+            data_type_lineno, _, port_width = self.visit(ctx.implicit_data_type())
         inputs = self.visitChildren(ctx.list_of_port_identifiers())
         if not isinstance(inputs, list):
             inputs = [inputs]
         input_decls = []
         for _input in inputs:
-            input_decl = Input(_input, width=None, dimensions=None, lineno=_input.lineno)
+            input_decl = Input(_input.name, width=port_width, dimensions=None, lineno=_input.lineno)
             input_decls.append(input_decl)
         return input_decls
     
     def visitOutput_declaration(self, ctx):
+        data_type_lineno, data_type, port_width = None, None, None
+        if ctx.data_type() is not None:
+            data_type_lineno, data_type, port_width = self.visit(ctx.data_type())
+        elif ctx.implicit_data_type() is not None:
+            data_type_lineno, _, port_width = self.visit(ctx.implicit_data_type())
         outputs = self.visitChildren(ctx.list_of_port_identifiers())
         if not isinstance(outputs, list):
             outputs = [outputs]
         output_decls = []
         for _output in outputs:
-            output_decl = Output(_output, width=None, dimensions=None, lineno=_output.lineno)
+            output_decl = Output(_output.name, width=port_width, dimensions=None, lineno=_output.lineno)
             output_decls.append(output_decl)
         return output_decls
     
@@ -306,6 +328,8 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
                 var = Reg(var_id.name, width=data_width, dimensions=var_dimension, lineno=var_lineno)
             elif data_type == "logic":
                 var = Logic(var_id.name, width=data_width, dimensions=var_dimension, lineno=var_lineno)
+            elif data_type == "integer":
+                var = Integer(var_id.name, width=data_width, dimensions=var_dimension, lineno=var_lineno)
             vars.append(var)
             if var_value:
                 lvalue = Lvalue(var_id, lineno=var_lineno)
@@ -377,7 +401,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
             identifier_list = [identifier_list]
         genvar_list = []
         for identifier in identifier_list:
-            genvar = Genvar(name=identifier,
+            genvar = Genvar(name=identifier.name,
                       width=Width(msb=IntConst('31', lineno=lineno),
                                   lsb=IntConst('0', lineno=lineno),
                                   lineno=identifier.lineno))
@@ -447,6 +471,12 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         var_decl = Decl(vars, lineno=lineno)
         return var_decl
     
+    def visitFor_initialization(self, ctx):
+        lineno = ctx.start.line
+        vars = self.visit(ctx.list_of_variable_assignments())
+        var_assign = BlockingSubstitution(vars[0], vars[1], ldelay=None, rdelay=None, lineno=lineno)
+        return var_assign
+    
     def visitFor_variable_assign(self, ctx):
         lineno = ctx.start.line
         identifier = self.visit(ctx.variable_identifier())
@@ -512,6 +542,8 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     def visitGenerate_block(self, ctx):
         lineno = ctx.start.line
         block_name = self.visitChildren(ctx.generate_block_name()) if ctx.generate_block_name() else None
+        if block_name is not None:
+            block_name = block_name.name
         block_items = self.visitChildren(ctx.generate_item())
         if not isinstance(block_items, list):
             block_items = [block_items]
@@ -529,6 +561,15 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         return ast
 
     def visitConditional_statement(self, ctx):
+        lineno = ctx.start.line
+        # TODO: better?
+        cond = self.visit(ctx.children[2]) if ctx.getChild(2) else None
+        true_statement = self.visit(ctx.children[4]) if ctx.getChild(4) else None
+        false_statement = self.visit(ctx.children[6]) if ctx.getChild(6) else None
+        ast = IfStatement(cond, true_statement, false_statement, lineno=lineno)
+        return ast
+    
+    def visitIf_generate_construct(self, ctx):
         lineno = ctx.start.line
         # TODO: better?
         cond = self.visit(ctx.children[2]) if ctx.getChild(2) else None
@@ -776,7 +817,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     
     def visitHier_ref(self, ctx):
         lineno = ctx.start.line
-        identifier = self.visit(ctx.identifier())
+        identifier = ctx.identifier().getText()
         select = self.visit(ctx.constant_bit_select()) if ctx.constant_bit_select() else None
         hier_ref = IdentifierScopeLabel(identifier, select, lineno=lineno)
         return hier_ref
