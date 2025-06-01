@@ -62,6 +62,23 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
         port_decl_list = self.visitChildren(ctx.list_of_port_declarations())
         if not isinstance(port_decl_list, list):
             port_decl_list = [port_decl_list]
+        # post-process port declarations to determine the direction
+        for i in range(1, len(port_decl_list)):
+            current_port = port_decl_list[i]
+            if isinstance(current_port, Port):
+                last_port = port_decl_list[i - 1]
+                if isinstance(last_port, Ioport):
+                    direction, port_type = None, None
+                    if last_port.first is not None:
+                        direction_type = type(last_port.first)
+                        port_width = current_port.width if current_port.width else last_port.first.width
+                        direction = direction_type(current_port.name, width=port_width, lineno=current_port.lineno)
+                    if last_port.second is not None:
+                        last_port_type = type(last_port.second)
+                        port_width = current_port.width if current_port.width else last_port.second.width
+                        port_type = last_port_type(current_port.name, width=port_width, lineno=current_port.lineno)
+                    current_port = Ioport(direction, port_type, lineno=current_port.lineno)
+                    port_decl_list[i] = current_port
         port_lineno = ctx.list_of_port_declarations().start.line if ctx.list_of_port_declarations() else ctx.start.line
         portlist = Portlist(port_decl_list, lineno=port_lineno)
         return identifier, paramlist, portlist
@@ -129,7 +146,7 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
     
     def visitNamed_port_connection(self, ctx):
         lineno = ctx.start.line
-        port_id = self.visit(ctx.port_identifier())
+        port_id = ctx.port_identifier().getText() if ctx.port_identifier() else None
         port_value = self.visit(ctx.port_assign())
         port = PortArg(port_id, port_value, lineno=lineno)
         return port
