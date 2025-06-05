@@ -27,6 +27,8 @@ class SVastToPyverilogVisitor(SystemVerilogParserVisitor):
 
     def visitSource_text(self, ctx):
         children = self.visitChildren(ctx)
+        if not isinstance(children, list):
+            children = [children]
         first_child = children[0]
         for child in children[1:]:
             if isinstance(child, Description):
