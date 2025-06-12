@@ -22,6 +22,7 @@ sys.setrecursionlimit(16 * 1024)
 
 class VerilogDataflowAnalyzer(VerilogCodeParser):
     def __init__(self, filelist, topmodule='TOP', noreorder=False, nobind=False,
+                 preprocess_output='preprocess.output',
                  preprocess_include=None,
                  preprocess_define=None):
         self.topmodule = topmodule
@@ -31,6 +32,7 @@ class VerilogDataflowAnalyzer(VerilogCodeParser):
         files = filelist if isinstance(filelist, tuple) or isinstance(
             filelist, list) else [filelist]
         VerilogCodeParser.__init__(self, files,
+                                   preprocess_output=preprocess_output,
                                    preprocess_include=preprocess_include,
                                    preprocess_define=preprocess_define)
         self.noreorder = noreorder
